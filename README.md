@@ -1,6 +1,6 @@
-# KINETIC MED-FIT 3D (v2.0)
+# KINETIC MED-FIT 3D (v2.1)
 
-> **Medical-Grade Interactive 3D Muscle Anatomy, Looping Biomechanical Workout Videos & Multi-Modality Exercise Physiology Studio (PWA / Android Play Store Ready)**
+> **Dual-Engine Interactive 3D Muscular System (BioDigital Human × MSD Manual + Ecorché Dissect/Isolate), Looping Biomechanical Workout Videos & Multi-Modality Exercise Physiology Studio (PWA / Android Play Store Ready)**
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-Chaibancha%2FYuenNanNan-orange?logo=github)](https://github.com/Chaibancha/YuenNanNan)
 [![Tech Stack](https://img.shields.io/badge/Stack-Three.js%20%7C%20React%20%7C%20Tailwind%20%7C%20WebGL-06b6d4)](#)
@@ -10,8 +10,9 @@
 
 ## Core Capabilities & Architecture
 
-### 1. Medical-Grade Ecorché 3D Muscle Fiber Selector (`src/Body3DAnatomy.js` & `src/Body3DSelector.jsx`)
-- **Procedural Striated Myofibril Textures & Bump Maps:** Renders striated muscle fibers and pearl-white tendon/aponeurosis insertions on an internal anatomical skeletal core (cranium, cervical/thoracic/lumbar spine, ribcage, sternum, clavicles, pelvis, and limb bones).
+### 1. Dual-Engine Medical 3D Muscular System (`src/Body3DAnatomy.js` & `src/Body3DSelector.jsx`)
+- **Engine 1 — BioDigital Human × MSD Manual Live 3D Viewer (`be=2PcB` + `HumanAPI`):** Embeds the official interactive muscular system model referenced from [MSD Manual Consumer Version: Muscular System](https://www.msdmanuals.com/home/multimedia/3dmodel/muscular-system) via `BIODIGITAL_MSD_EMBED_URL` and `BIODIGITAL_HUMAN_API_SCRIPT` (`human-api.min.js` + `postMessage` bridge via `attachBioDigitalBridge()`). Clicking any anatomical structure resolves Latin/English names through `mapBioDigitalObjectToMuscleId()` to sync the 16 workout targets and live MSD Manual **Origin / Insertion** reference card.
+- **Engine 2 — BioDigital-Matched Three.js Anatomical Ecorché + Dissect & Isolate:** Offline-capable striated myofibril model (`buildMedicalAnatomyGroup()`) featuring **cranial & facial muscles** (`Frontalis`, `Temporalis`, `Masseter`, `Orbicularis Oris`) and **7 pearl-white tendon/fascia structures (`tendonMeshes`)** (`Galea Aponeurotica`, `Linea Alba`, `Thoracolumbar Fascia`, `Iliotibial Band`, `Patellar Tendon`, `Achilles Tendon`, `Wrist Retinaculum`), plus interactive **Select / Dissect / Isolate** tools (`dissectedMeshIds`, `isolatedMuscleId`).
 - **16 Detailed Bilateral Muscle Groups:**
   1. `neck_scm` — Sternocleidomastoid & Splenius Capitis
   2. `shoulders_anterior_lateral` — Anterior & Lateral Deltoids
@@ -29,8 +30,8 @@
   14. `quads` — Quadriceps Femoris (Rectus Femoris, Vastus Lateralis/Medialis)
   15. `hamstrings` — Biceps Femoris & Semitendinosus
   16. `calves_tibialis` — Gastrocnemius, Soleus & Tibialis Anterior
-- **3 Medical Visualization Modes:**
-  - `🧬 Ecorché Fiber`: High-contrast medical striated muscle tissue
+- **3 Medical Visualization Modes (`applyMedicalViewModeColors()`):**
+  - `🧬 Ecorché Fiber`: High-contrast medical striated muscle tissue + pearl-white tendons
   - `🦴 X-Ray Skeletal`: Translucent fascia/muscle revealing spine, ribcage & joints
   - `🔥 EMG & Recovery Heatmap`: Live muscle fatigue & recovery status map
 
@@ -64,8 +65,8 @@ YuenNanNan/
 ├── Explode30_Original.html     # Original v0 prototype backup
 └── src/
     ├── App.jsx                 # React Main Orchestrator & Mobile Navigation
-    ├── Body3DAnatomy.js        # Shared Medical Skeletal & 16-Muscle 3D Builder
-    ├── Body3DSelector.jsx      # React Three.js Interactive 3D Selector
+    ├── Body3DAnatomy.js        # BioDigital HumanAPI Bridge, MSD Mapping & Ecorché Builder
+    ├── Body3DSelector.jsx      # Dual-Engine BioDigital + Three.js Dissect/Isolate Selector
     ├── ExerciseVideoEngine.js  # Looping Biomechanical Video Stream Engine
     ├── WorkoutEngine.js        # Physiology Engine, 16-Muscle DB & Scheduling
     └── WorkoutPlayer.jsx       # Live Video Player, Breath Pacer & Smart Alerts

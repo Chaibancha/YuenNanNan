@@ -128,15 +128,15 @@
     <!-- SECTION A: 3D MEDICAL ANATOMY & CONFIGURATOR -->
     <section id="panel-setup" class="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-      <!-- 1. MEDICAL 3D MUSCLE FIBER SELECTOR (5 Cols) -->
+      <!-- 1. MEDICAL 3D MUSCLE FIBER SELECTOR (DUAL-ENGINE BIODIGITAL × MSD + ECORCHÉ) -->
       <div id="sec-3d" class="lg:col-span-5 bg-zinc-900/90 border border-zinc-800 rounded-3xl p-4 sm:p-5 flex flex-col gap-3.5 shadow-2xl">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
             <span class="text-[11px] font-bold uppercase tracking-wider text-orange-400">
-              1. Medical Ecorché 3D • 16 Muscle Groups
+              1. BioDigital Human × MSD Manual Muscular System
             </span>
             <h2 class="text-base sm:text-lg font-extrabold text-white">
-              โมเดลใยกล้ามเนื้อทางการแพทย์ 3 มิติ
+              โมเดลกล้ามเนื้อ 3 มิติทางการแพทย์ (16 มัดละเอียด)
             </h2>
           </div>
 
@@ -146,43 +146,95 @@
           </button>
         </div>
 
-        <!-- 3 Medical View Modes -->
-        <div class="grid grid-cols-3 gap-1.5 bg-zinc-950 p-1 rounded-2xl border border-zinc-800">
-          <button type="button" data-vmode="ecorche" class="vmode-btn py-1.5 px-2 rounded-xl text-[11px] font-bold bg-orange-500 text-white">🧬 ใยกล้ามเนื้อ</button>
-          <button type="button" data-vmode="xray" class="vmode-btn py-1.5 px-2 rounded-xl text-[11px] font-bold text-zinc-400 hover:text-white">🦴 X-Ray กระดูก</button>
-          <button type="button" data-vmode="emg" class="vmode-btn py-1.5 px-2 rounded-xl text-[11px] font-bold text-zinc-400 hover:text-white">🔥 EMG & ฟื้นตัว</button>
+        <!-- Dual-Engine Switcher -->
+        <div class="grid grid-cols-2 gap-1.5 bg-zinc-950 p-1 rounded-2xl border border-zinc-800">
+          <button type="button" data-engine="biodigital" class="engine-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-extrabold bg-orange-500 text-white shadow">🌐 BioDigital × MSD 3D Live</button>
+          <button type="button" data-engine="ecorche" class="engine-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-extrabold text-zinc-400 hover:text-white">🧬 Ecorché 3D + Dissect</button>
         </div>
 
-        <!-- Three.js WebGL Viewport -->
-        <div class="relative w-full h-[380px] sm:h-[430px] rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800">
-          <div id="three-canvas-container" class="w-full h-full"></div>
+        <!-- ENGINE 1: Official BioDigital × MSD Manual Muscular System Viewer -->
+        <div id="engine-biodigital-panel" class="flex flex-col gap-2.5">
+          <div class="relative w-full h-[420px] sm:h-[460px] rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800">
+            <iframe
+              id="biodigital-msd-iframe"
+              title="MSD Manual & BioDigital Human 3D Muscular System"
+              class="w-full h-full border-0"
+              allow="fullscreen; xr-spatial-tracking"
+              loading="lazy"
+            ></iframe>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-zinc-400 bg-zinc-950/80 border border-zinc-800 rounded-xl px-3 py-2">
+            <span id="biodigital-sync-status">👆 หมุน ซูม และใช้ Dissect บนโมเดล MSD Manual ด้านบน หรือกดปุ่มมัดกล้ามเนื้อด้านล่างเพื่อจัดตาราง</span>
+            <a id="msd-ref-link" href="https://www.msdmanuals.com/home/multimedia/3dmodel/muscular-system" target="_blank" rel="noopener noreferrer" class="text-orange-400 hover:underline font-semibold shrink-0">
+              อ้างอิง MSD Manual ↗
+            </a>
+          </div>
+        </div>
 
-          <!-- Medical Hover Tooltip -->
-          <div class="absolute top-3 left-3 right-3 pointer-events-none">
-            <div id="muscle-hover-badge" class="bg-zinc-950/88 backdrop-blur-md border border-zinc-800 px-3 py-2 rounded-xl shadow max-w-xs">
-              <p id="muscle-hover-title" class="text-xs font-extrabold text-zinc-100">🖱️ ลากหมุน 360° • คลิกที่ใยกล้ามเนื้อ 16 มัด</p>
-              <p id="muscle-hover-sub" class="text-[10px] text-zinc-400">Medical Myofibril Striations + Internal Skeleton</p>
-            </div>
+        <!-- ENGINE 2: BioDigital-Matched Three.js Ecorché + Dissect & Isolate -->
+        <div id="engine-ecorche-panel" class="hidden flex-col gap-2.5">
+          <!-- 3 Medical View Modes -->
+          <div class="grid grid-cols-3 gap-1.5 bg-zinc-950 p-1 rounded-2xl border border-zinc-800">
+            <button type="button" data-vmode="ecorche" class="vmode-btn py-1.5 px-2 rounded-xl text-[11px] font-bold bg-orange-500 text-white">🧬 ใยกล้ามเนื้อ</button>
+            <button type="button" data-vmode="xray" class="vmode-btn py-1.5 px-2 rounded-xl text-[11px] font-bold text-zinc-400 hover:text-white">🦴 X-Ray กระดูก</button>
+            <button type="button" data-vmode="emg" class="vmode-btn py-1.5 px-2 rounded-xl text-[11px] font-bold text-zinc-400 hover:text-white">🔥 EMG & ฟื้นตัว</button>
           </div>
 
-          <!-- Camera Angle & Zoom -->
-          <div class="absolute bottom-3 inset-x-3 flex flex-wrap items-center justify-between gap-2">
-            <div class="flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md p-1 rounded-xl border border-zinc-800">
-              <button type="button" data-cam="front" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-orange-500 text-white">หน้า</button>
-              <button type="button" data-cam="back" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-300">หลัง</button>
-              <button type="button" data-cam="side" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-300">360°</button>
+          <!-- Dissect / Isolate Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-1.5 bg-zinc-950 px-2.5 py-1.5 rounded-2xl border border-zinc-800">
+            <div class="flex items-center gap-1">
+              <button type="button" data-tool="select" class="tool-btn px-2.5 py-1 rounded-xl text-[11px] font-bold bg-cyan-500 text-zinc-950">👆 เลือกฝึก</button>
+              <button type="button" data-tool="dissect" class="tool-btn px-2.5 py-1 rounded-xl text-[11px] font-bold bg-zinc-900 text-zinc-300">🔪 Dissect</button>
+              <button type="button" data-tool="isolate" class="tool-btn px-2.5 py-1 rounded-xl text-[11px] font-bold bg-zinc-900 text-zinc-300">🔍 Isolate</button>
             </div>
-            <div class="flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md p-1 rounded-xl border border-zinc-800">
-              <button type="button" id="btn-zoom-in" class="px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-200 hover:bg-zinc-800">＋ ซูม</button>
-              <button type="button" id="btn-zoom-out" class="px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-200 hover:bg-zinc-800">－ ซูม</button>
+            <button id="btn-reset-layers" type="button" class="hidden px-2.5 py-1 rounded-xl text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+              🔄 คืนค่าชั้น (0)
+            </button>
+          </div>
+
+          <!-- Three.js WebGL Viewport -->
+          <div class="relative w-full h-[370px] sm:h-[420px] rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800">
+            <div id="three-canvas-container" class="w-full h-full"></div>
+
+            <!-- Medical Hover Tooltip -->
+            <div class="absolute top-3 left-3 right-3 pointer-events-none">
+              <div id="muscle-hover-badge" class="bg-zinc-950/88 backdrop-blur-md border border-zinc-800 px-3 py-2 rounded-xl shadow max-w-xs">
+                <p id="muscle-hover-title" class="text-xs font-extrabold text-zinc-100">🖱️ ลากหมุน 360° • คลิกที่ใยกล้ามเนื้อ 16 มัด</p>
+                <p id="muscle-hover-sub" class="text-[10px] text-zinc-400">White Tendons + Cranial/Body Myofibrils</p>
+              </div>
+            </div>
+
+            <!-- Camera Angle & Zoom -->
+            <div class="absolute bottom-3 inset-x-3 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md p-1 rounded-xl border border-zinc-800">
+                <button type="button" data-cam="front" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-orange-500 text-white">หน้า</button>
+                <button type="button" data-cam="back" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-300">หลัง</button>
+                <button type="button" data-cam="side" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-300">360°</button>
+              </div>
+              <div class="flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md p-1 rounded-xl border border-zinc-800">
+                <button type="button" id="btn-zoom-in" class="px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-200 hover:bg-zinc-800">＋ ซูม</button>
+                <button type="button" id="btn-zoom-out" class="px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-200 hover:bg-zinc-800">－ ซูม</button>
+              </div>
             </div>
           </div>
+        </div>
+
+        <!-- MSD Manual Anatomical Origin/Insertion Reference Card -->
+        <div class="bg-zinc-950/90 border border-orange-500/35 rounded-2xl p-3 space-y-1">
+          <div class="flex items-center justify-between gap-2">
+            <span id="msd-ref-title" class="text-xs font-extrabold text-white">อกบนและอกหลัก (Chest Pectorals)</span>
+            <span id="msd-ref-latin" class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-orange-300 border border-zinc-800">Pectoralis Major</span>
+          </div>
+          <p class="text-[11px] text-cyan-300">
+            จุดกำเนิด → จุดเกาะ: <span id="msd-ref-origin" class="text-zinc-300">Clavicle & Sternum → Intertubercular Sulcus of Humerus</span>
+          </p>
+          <p id="msd-ref-desc" class="text-[11px] text-zinc-400 leading-snug">กล้ามเนื้อหน้าอกส่วนบนและกลาง ทำหน้าที่ผลัก ดัน และหุบต้นแขนเข้าหากลางลำตัว</p>
         </div>
 
         <!-- 16 Muscle Group Pills with JEFIT Recovery % -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
-            <span id="selected-muscle-count" class="text-xs font-semibold text-zinc-400">มัดกล้ามเนื้อ (เลือกแล้ว 4/16):</span>
+            <span id="selected-muscle-count" class="text-xs font-semibold text-zinc-400">ซิงค์มัดกล้ามเนื้อเข้าตาราง (เลือกแล้ว 4/16):</span>
           </div>
           <div id="muscle-pill-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 max-h-44 overflow-y-auto pr-1 mt-1.5"></div>
         </div>
@@ -433,7 +485,13 @@
       getMuscleRecoveryPercent,
       MediaPreloader
     } from './src/WorkoutEngine.js';
-    import { buildMedicalAnatomyGroup, applyMedicalViewModeColors } from './src/Body3DAnatomy.js';
+    import {
+      BIODIGITAL_MSD_EMBED_URL,
+      MSD_MANUAL_REFERENCE_URL,
+      attachBioDigitalBridge,
+      buildMedicalAnatomyGroup,
+      applyMedicalViewModeColors
+    } from './src/Body3DAnatomy.js';
     import { BiomechanicalVideoLoopEngine } from './src/ExerciseVideoEngine.js';
 
     const state = {
@@ -444,6 +502,11 @@
       fitnessLevel: 'intermediate',
       durationMinutes: 20,
       lowImpactOnly: false,
+      engineMode: 'biodigital',
+      toolMode: 'select',
+      dissectedMeshIds: [],
+      isolatedMuscleId: null,
+      focusedMuscle: 'chest_upper_Mid',
       viewMode: 'ecorche',
       schedule: null,
       currentIndex: 0,
@@ -470,16 +533,45 @@
       document.getElementById('exercise-fallback-canvas')
     );
 
-    // 1. Setup 3D Medical Anatomy Viewport
+    // 0. Initialize Official BioDigital × MSD Manual 3D Muscular System Iframe & Bridge
+    const bioIframe = document.getElementById('biodigital-msd-iframe');
+    if (bioIframe) bioIframe.src = BIODIGITAL_MSD_EMBED_URL;
+    const msdLink = document.getElementById('msd-ref-link');
+    if (msdLink) msdLink.href = MSD_MANUAL_REFERENCE_URL;
+
+    function updateMsdReferenceCard(muscleId) {
+      const meta = MUSCLE_GROUPS.find(m => m.id === muscleId) || MUSCLE_GROUPS[0];
+      document.getElementById('msd-ref-title').textContent = meta.nameTh;
+      document.getElementById('msd-ref-latin').textContent = meta.nameEn;
+      document.getElementById('msd-ref-origin').textContent = meta.originInsertion;
+      document.getElementById('msd-ref-desc').textContent = meta.description;
+    }
+
+    attachBioDigitalBridge(
+      'biodigital-msd-iframe',
+      (muscleId, rawLabel) => {
+        state.focusedMuscle = muscleId;
+        updateMsdReferenceCard(muscleId);
+        document.getElementById('biodigital-sync-status').textContent = `🎯 ซิงค์จาก BioDigital: ${rawLabel}`;
+        toggleMuscleSelection(muscleId);
+      },
+      rawLabel => {
+        if (rawLabel) {
+          document.getElementById('biodigital-sync-status').textContent = `🔎 โครงสร้างที่เลือกใน BioDigital: ${rawLabel}`;
+        }
+      }
+    );
+
+    // 1. Setup Three.js BioDigital-Matched Ecorché Viewport
     const container = document.getElementById('three-canvas-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#07070b');
 
-    const camera = new THREE.PerspectiveCamera(36, (container.clientWidth || 400) / (container.clientHeight || 400), 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(36, 420 / 420, 0.1, 100);
     camera.position.set(0, 1.05, 5.2);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    renderer.setSize(container.clientWidth || 400, container.clientHeight || 400);
+    renderer.setSize(container.clientWidth || 420, container.clientHeight || 420);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
@@ -487,7 +579,7 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.07;
     controls.target.set(0, 0.9, 0);
-    controls.minDistance = 2.4;
+    controls.minDistance = 2.3;
     controls.maxDistance = 7.8;
 
     scene.add(new THREE.AmbientLight('#ffffff', 0.72));
@@ -497,13 +589,27 @@
     const rimLight = new THREE.DirectionalLight('#38bdf8', 0.95);
     rimLight.position.set(-4.2, 3.2, -4.2);
     scene.add(rimLight);
+    const warmFill = new THREE.DirectionalLight('#fb7185', 0.55);
+    warmFill.position.set(0, 1.8, -5.0);
+    scene.add(warmFill);
 
     const gridHelper = new THREE.PolarGridHelper(1.55, 16, 6, 64, '#27272a', '#18181b');
     gridHelper.position.y = -0.95;
     scene.add(gridHelper);
 
-    const { bodyGroup, muscleMeshes } = buildMedicalAnatomyGroup();
+    const { bodyGroup, muscleMeshes, tendonMeshes } = buildMedicalAnatomyGroup();
     scene.add(bodyGroup);
+
+    function resizeEcorcheCanvas() {
+      if (!container) return;
+      const w = container.clientWidth || 420;
+      const h = container.clientHeight || 420;
+      if (w > 0 && h > 0) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+    }
 
     function getRecoveryMap() {
       const m = {};
@@ -515,13 +621,26 @@
       const curStep = state.schedule?.steps?.[state.currentIndex];
       applyMedicalViewModeColors({
         muscleMeshes,
+        tendonMeshes,
         selectedMuscles: state.selectedMuscles,
         isFullBody: state.isFullBody,
         hoveredMuscle: state.hoveredMuscle,
         activeHighlightMuscle: state.isRunning && curStep ? curStep.primaryMuscle : null,
         viewMode: state.viewMode,
-        recoveryStats: getRecoveryMap()
+        recoveryStats: getRecoveryMap(),
+        dissectedMeshIds: state.dissectedMeshIds,
+        isolatedMuscleId: state.isolatedMuscleId
       });
+    }
+
+    function updateLayerResetButton() {
+      const rBtn = document.getElementById('btn-reset-layers');
+      if (state.dissectedMeshIds.length > 0 || state.isolatedMuscleId) {
+        rBtn.classList.remove('hidden');
+        rBtn.textContent = `🔄 คืนค่าชั้น (${state.dissectedMeshIds.length})`;
+      } else {
+        rBtn.classList.add('hidden');
+      }
     }
 
     // Raycaster
@@ -535,7 +654,7 @@
       pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
-      return raycaster.intersectObjects(muscleMeshes, false);
+      return raycaster.intersectObjects(muscleMeshes.filter(m => m.visible), false);
     }
 
     renderer.domElement.addEventListener('pointermove', e => {
@@ -543,16 +662,17 @@
       const tEl = document.getElementById('muscle-hover-title');
       const sEl = document.getElementById('muscle-hover-sub');
       if (hits.length > 0) {
-        const { muscleId, meta } = hits[0].object.userData;
+        const { muscleId, subLabel, meta } = hits[0].object.userData;
         state.hoveredMuscle = muscleId;
         renderer.domElement.style.cursor = 'pointer';
-        tEl.textContent = `🎯 ${meta.nameTh}`;
+        tEl.textContent = `🎯 ${meta.nameTh}${subLabel ? ` (${subLabel})` : ''}`;
         sEl.textContent = `จุดยึดเกาะ: ${meta.originInsertion}`;
+        updateMsdReferenceCard(muscleId);
       } else {
         state.hoveredMuscle = null;
         renderer.domElement.style.cursor = 'grab';
         tEl.textContent = '🖱️ ลากหมุน 360° • คลิกที่ใยกล้ามเนื้อ 16 มัด';
-        sEl.textContent = 'Medical Myofibril Striations + Internal Skeleton';
+        sEl.textContent = 'White Tendons + Cranial/Body Myofibrils';
       }
       refresh3DMuscleColors();
     });
@@ -561,7 +681,22 @@
     renderer.domElement.addEventListener('pointerup', e => {
       if (Math.hypot(e.clientX - downCoords.x, e.clientY - downCoords.y) < 7) {
         const hits = pickMuscle(e.clientX, e.clientY);
-        if (hits.length > 0) toggleMuscleSelection(hits[0].object.userData.muscleId);
+        if (hits.length > 0) {
+          const hitData = hits[0].object.userData;
+          state.focusedMuscle = hitData.muscleId;
+          updateMsdReferenceCard(hitData.muscleId);
+          if (state.toolMode === 'dissect') {
+            state.dissectedMeshIds = [...state.dissectedMeshIds, hitData.meshUid];
+            updateLayerResetButton();
+            refresh3DMuscleColors();
+          } else if (state.toolMode === 'isolate') {
+            state.isolatedMuscleId = state.isolatedMuscleId === hitData.muscleId ? null : hitData.muscleId;
+            updateLayerResetButton();
+            refresh3DMuscleColors();
+          } else {
+            toggleMuscleSelection(hitData.muscleId);
+          }
+        }
       }
     });
 
@@ -575,12 +710,44 @@
       renderer.render(scene, camera);
     }
     animate3D();
+    window.addEventListener('resize', resizeEcorcheCanvas);
 
-    window.addEventListener('resize', () => {
-      if (!container) return;
-      camera.aspect = (container.clientWidth || 400) / (container.clientHeight || 400);
-      camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth || 400, container.clientHeight || 400);
+    // Dual-Engine Switcher & Dissect/Isolate Tool Buttons
+    document.querySelectorAll('.engine-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.engineMode = btn.dataset.engine;
+        document.querySelectorAll('.engine-btn').forEach(b => {
+          b.className = 'engine-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-extrabold text-zinc-400 hover:text-white';
+        });
+        btn.className = 'engine-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-extrabold bg-orange-500 text-white shadow';
+        const bioPanel = document.getElementById('engine-biodigital-panel');
+        const ecoPanel = document.getElementById('engine-ecorche-panel');
+        if (state.engineMode === 'biodigital') {
+          bioPanel.classList.remove('hidden'); bioPanel.classList.add('flex');
+          ecoPanel.classList.add('hidden'); ecoPanel.classList.remove('flex');
+        } else {
+          bioPanel.classList.add('hidden'); bioPanel.classList.remove('flex');
+          ecoPanel.classList.remove('hidden'); ecoPanel.classList.add('flex');
+          setTimeout(resizeEcorcheCanvas, 20);
+        }
+      });
+    });
+
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.toolMode = btn.dataset.tool;
+        document.querySelectorAll('.tool-btn').forEach(b => {
+          b.className = 'tool-btn px-2.5 py-1 rounded-xl text-[11px] font-bold bg-zinc-900 text-zinc-300';
+        });
+        btn.className = 'tool-btn px-2.5 py-1 rounded-xl text-[11px] font-bold bg-cyan-500 text-zinc-950';
+      });
+    });
+
+    document.getElementById('btn-reset-layers').addEventListener('click', () => {
+      state.dissectedMeshIds = [];
+      state.isolatedMuscleId = null;
+      updateLayerResetButton();
+      refresh3DMuscleColors();
     });
 
     // View mode, camera & zoom buttons
@@ -606,7 +773,7 @@
 
     document.getElementById('btn-zoom-in').addEventListener('click', () => {
       const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
-      targetCamPos = controls.target.clone().addScaledVector(dir, Math.max(2.5, camera.position.distanceTo(controls.target) - 0.7));
+      targetCamPos = controls.target.clone().addScaledVector(dir, Math.max(2.3, camera.position.distanceTo(controls.target) - 0.7));
     });
     document.getElementById('btn-zoom-out').addEventListener('click', () => {
       const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
@@ -616,6 +783,8 @@
     // 2. Config UI & Schedule Builder
     function toggleMuscleSelection(mId) {
       state.isFullBody = false;
+      state.focusedMuscle = mId;
+      updateMsdReferenceCard(mId);
       if (state.selectedMuscles.includes(mId)) {
         if (state.selectedMuscles.length > 1) state.selectedMuscles = state.selectedMuscles.filter(id => id !== mId);
       } else {
