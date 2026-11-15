@@ -1,0 +1,26 @@
+{
+  "name": "Kinetic Med-Fit 3D | Medical Anatomy & AI Workout Studio",
+  "short_name": "Med-Fit 3D",
+  "description": "Interactive 3D medical muscle fiber selector with looping biomechanical workout videos, HIIT, REHIT, Cardio, Yoga & 7-Minute Scientific Circuit.",
+  "start_url": "./Index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#09090b",
+  "theme_color": "#f97316",
+  "categories": ["health", "fitness", "sports", "medical"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%2309090b'/%3E%3Crect x='12' y='12' width='168' height='168' rx='34' fill='%23f97316' fill-opacity='0.18' stroke='%23f97316' stroke-width='8'/%3E%3Ctext x='96' y='118' font-family='sans-serif' font-size='68' font-weight='bold' text-anchor='middle' fill='%23f97316'%3E3D%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%2309090b'/%3E%3Crect x='24' y='24' width='464' height='464' rx='80' fill='%23f97316' fill-opacity='0.2' stroke='%23f97316' stroke-width='18'/%3E%3Ctext x='256' y='310' font-family='sans-serif' font-size='180' font-weight='bold' text-anchor='middle' fill='%23f97316'%3E3D%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

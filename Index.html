@@ -2,13 +2,17 @@
 <html lang="th" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KINETIC 3D STUDIO | Interactive 3D Muscle Selector & Smart Workout Engine</title>
-  <!-- Google Fonts: Prompt + JetBrains Mono -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#09090b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>KINETIC MED-FIT 3D | โมเดลกายวิภาค 3 มิติ & วิดีโอฝึกซ้อมอัจฉริยะ</title>
+
+  <link rel="manifest" href="./manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <!-- Tailwind CSS CDN -->
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -23,7 +27,8 @@
       }
     };
   </script>
-  <!-- Import Map สำหรับ Three.js r160 + OrbitControls -->
+
+  <!-- Three.js r160 Import Map -->
   <script type="importmap">
     {
       "imports": {
@@ -32,128 +37,140 @@
       }
     }
   </script>
+
   <style>
     body {
-      background-color: #09090b;
+      background-color: #07070a;
       color: #f4f4f5;
       overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
     }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #121216; }
     ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
     ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
-
-    @keyframes pulseVector {
-      0%, 100% { transform: translateY(6px) scale(0.97); opacity: 0.65; }
-      50% { transform: translateY(-8px) scale(1.04); opacity: 1; }
-    }
-    .anim-vector {
-      animation: pulseVector 1.25s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-    }
   </style>
 </head>
-<body class="min-h-screen flex flex-col antialiased selection:bg-orange-500 selection:text-white">
+<body class="min-h-screen flex flex-col antialiased selection:bg-orange-500 selection:text-white pb-20 lg:pb-6">
 
-  <!-- Floating Smart Alert Banner -->
+  <!-- Smart Toast Notification -->
   <div id="smart-toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md pointer-events-none opacity-0 -translate-y-4 transition-all duration-300">
     <div id="smart-toast-box" class="bg-zinc-900/95 backdrop-blur-md border-2 border-orange-500 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3">
       <span id="smart-toast-icon" class="text-2xl">🔥</span>
       <div class="min-w-0 flex-1">
         <p id="smart-toast-title" class="text-xs font-extrabold uppercase tracking-wider text-orange-400">เริ่มท่าใหม่</p>
-        <p id="smart-toast-subtitle" class="text-sm font-bold text-white truncate">Dumbbell Squat Thruster</p>
+        <p id="smart-toast-subtitle" class="text-sm font-bold text-white truncate">Workout Ready</p>
       </div>
     </div>
   </div>
 
   <!-- Top Navigation Header -->
   <header class="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800/80">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-3 flex flex-wrap items-center justify-between gap-2.5">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center font-extrabold text-white shadow-lg shadow-orange-500/20">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 via-rose-500 to-amber-500 flex items-center justify-center font-extrabold text-white shadow-lg shadow-orange-500/25">
           3D
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white">
-              KINETIC <span class="text-orange-500">3D STUDIO</span>
+            <h1 class="text-base sm:text-xl font-extrabold tracking-tight text-white">
+              KINETIC <span class="text-orange-500">MED-FIT 3D</span>
             </h1>
-            <span class="hidden sm:inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-zinc-900 text-orange-400 border border-zinc-800">
-              WebGL + Exercise Physiology Engine
+            <span class="hidden md:inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-900 text-emerald-400 border border-emerald-500/30">
+              v2.0 • Medical Fibers + Looping Video + Play Store PWA
             </span>
           </div>
-          <p class="text-xs text-zinc-400">
-            Interactive 3D Muscle Selector • Multi-Equipment • HIIT / REHIT / Cardio • Zero-Latency Player
+          <p class="text-[11px] sm:text-xs text-zinc-400">
+            16-Muscle Medical Anatomy • HIIT / REHIT / Cardio / Yoga / 7-Min Circuit
           </p>
         </div>
       </div>
 
-      <!-- Global Audio / Voice / Notification Controls -->
-      <div class="flex flex-wrap items-center gap-2">
-        <div class="bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl flex items-center gap-2">
-          <span class="text-[11px] text-zinc-400">เวลารวมคงเหลือ:</span>
-          <span id="global-remaining-clock" class="font-mono font-extrabold text-sm sm:text-base text-orange-400">20:00</span>
+      <!-- Daily Burn Live Telemetry & Controls -->
+      <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+        <button id="btn-quick-7min" type="button" class="px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 transition">
+          ⚡ 7-Minute Quick
+        </button>
+        <button id="btn-quick-yoga" type="button" class="px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition">
+          🧘 Yoga Flow
+        </button>
+
+        <div class="bg-zinc-900 border border-zinc-800 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5">
+          <span class="text-rose-500 animate-pulse text-xs">❤️</span>
+          <span id="live-bpm-display" class="font-mono font-extrabold text-xs text-white">128 BPM</span>
         </div>
 
-        <button id="btn-sound" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold border bg-emerald-500/15 text-emerald-300 border-emerald-500/40 transition">
-          🔔 เสียงบี๊ป: เปิด
+        <div class="bg-zinc-900 border border-zinc-800 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5">
+          <span class="text-[10px] text-zinc-400 hidden sm:inline">เหลือรวม:</span>
+          <span id="global-remaining-clock" class="font-mono font-extrabold text-xs sm:text-sm text-orange-400">20:00</span>
+        </div>
+
+        <button id="btn-sound" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold border bg-emerald-500/15 text-emerald-300 border-emerald-500/40">
+          🔔
         </button>
-        <button id="btn-voice" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold border bg-cyan-500/15 text-cyan-300 border-cyan-500/40 transition">
-          🗣️ เสียงพากย์: เปิด
+        <button id="btn-voice" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold border bg-cyan-500/15 text-cyan-300 border-cyan-500/40">
+          🗣️
         </button>
-        <button id="btn-notify" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold border bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-700 transition">
-          📲 แจ้งเตือนเบราว์เซอร์
+        <button id="btn-notify" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold border bg-zinc-900 text-zinc-300 border-zinc-800">
+          📲
         </button>
       </div>
     </div>
 
-    <!-- Global Progress Bar -->
     <div class="w-full h-1.5 bg-zinc-900">
       <div id="global-progress-bar" class="h-full bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 transition-all duration-300" style="width: 0%"></div>
     </div>
   </header>
 
   <!-- Main Workspace -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-5 space-y-6">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-5 space-y-6">
 
-    <!-- TOP GRID: 3D Muscle Selector (Left) + Equipment & Modality Configurator (Right) -->
-    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- SECTION A: 3D MEDICAL ANATOMY & CONFIGURATOR -->
+    <section id="panel-setup" class="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-      <!-- 1. INTERACTIVE 3D MUSCLE SELECTOR (5 Columns) -->
-      <div class="lg:col-span-5 bg-zinc-900/90 border border-zinc-800 rounded-3xl p-4 sm:p-5 flex flex-col gap-4 shadow-2xl">
+      <!-- 1. MEDICAL 3D MUSCLE FIBER SELECTOR (5 Cols) -->
+      <div id="sec-3d" class="lg:col-span-5 bg-zinc-900/90 border border-zinc-800 rounded-3xl p-4 sm:p-5 flex flex-col gap-3.5 shadow-2xl">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
             <span class="text-[11px] font-bold uppercase tracking-wider text-orange-400">
-              1. Interactive 3D Muscle Selector
+              1. Medical Ecorché 3D • 16 Muscle Groups
             </span>
             <h2 class="text-base sm:text-lg font-extrabold text-white">
-              คลิกเลือกมัดกล้ามเนื้อบนโมเดล 3 มิติ
+              โมเดลใยกล้ามเนื้อทางการแพทย์ 3 มิติ
             </h2>
           </div>
 
-          <button id="btn-full-body" type="button" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border bg-zinc-800 text-zinc-200 border-zinc-700 hover:border-orange-500">
+          <button id="btn-full-body" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border bg-zinc-800 text-zinc-200 border-zinc-700 hover:border-orange-500">
             <span>🔥</span>
-            <span>ทั่วร่างกาย (Full Body)</span>
+            <span>ทั่วร่างกาย (16 มัด)</span>
           </button>
         </div>
 
+        <!-- 3 Medical View Modes -->
+        <div class="grid grid-cols-3 gap-1.5 bg-zinc-950 p-1 rounded-2xl border border-zinc-800">
+          <button type="button" data-vmode="ecorche" class="vmode-btn py-1.5 px-2 rounded-xl text-[11px] font-bold bg-orange-500 text-white">🧬 ใยกล้ามเนื้อ</button>
+          <button type="button" data-vmode="xray" class="vmode-btn py-1.5 px-2 rounded-xl text-[11px] font-bold text-zinc-400 hover:text-white">🦴 X-Ray กระดูก</button>
+          <button type="button" data-vmode="emg" class="vmode-btn py-1.5 px-2 rounded-xl text-[11px] font-bold text-zinc-400 hover:text-white">🔥 EMG & ฟื้นตัว</button>
+        </div>
+
         <!-- Three.js WebGL Viewport -->
-        <div class="relative w-full h-[390px] sm:h-[430px] rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800">
+        <div class="relative w-full h-[380px] sm:h-[430px] rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800">
           <div id="three-canvas-container" class="w-full h-full"></div>
 
-          <!-- Hover / Selection Badge Overlay -->
-          <div class="absolute top-3 left-3 pointer-events-none">
-            <div id="muscle-hover-badge" class="bg-zinc-900/90 border border-zinc-800 px-3 py-1.5 rounded-xl shadow">
-              <p id="muscle-hover-title" class="text-xs font-bold text-zinc-200">🖱️ ลากหมุน 360° • คลิกที่มัดกล้ามเนื้อเพื่อเลือก</p>
-              <p id="muscle-hover-sub" class="text-[10px] text-zinc-400">Translucent Anatomical WebGL Model</p>
+          <!-- Medical Hover Tooltip -->
+          <div class="absolute top-3 left-3 right-3 pointer-events-none">
+            <div id="muscle-hover-badge" class="bg-zinc-950/88 backdrop-blur-md border border-zinc-800 px-3 py-2 rounded-xl shadow max-w-xs">
+              <p id="muscle-hover-title" class="text-xs font-extrabold text-zinc-100">🖱️ ลากหมุน 360° • คลิกที่ใยกล้ามเนื้อ 16 มัด</p>
+              <p id="muscle-hover-sub" class="text-[10px] text-zinc-400">Medical Myofibril Striations + Internal Skeleton</p>
             </div>
           </div>
 
-          <!-- Camera Angle & Zoom Controls -->
+          <!-- Camera Angle & Zoom -->
           <div class="absolute bottom-3 inset-x-3 flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md p-1 rounded-xl border border-zinc-800">
-              <button type="button" data-cam="front" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-orange-500 text-white">ด้านหน้า</button>
-              <button type="button" data-cam="back" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-300 hover:text-white">ด้านหลัง</button>
-              <button type="button" data-cam="side" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-300 hover:text-white">มุมเฉียง 360°</button>
+              <button type="button" data-cam="front" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-orange-500 text-white">หน้า</button>
+              <button type="button" data-cam="back" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-300">หลัง</button>
+              <button type="button" data-cam="side" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-300">360°</button>
             </div>
             <div class="flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md p-1 rounded-xl border border-zinc-800">
               <button type="button" id="btn-zoom-in" class="px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-200 hover:bg-zinc-800">＋ ซูม</button>
@@ -162,70 +179,71 @@
           </div>
         </div>
 
-        <!-- 10 Muscle Group Pills synced with 3D Mesh -->
+        <!-- 16 Muscle Group Pills with JEFIT Recovery % -->
         <div>
-          <div class="flex items-center justify-between mb-2">
-            <span id="selected-muscle-count" class="text-xs font-semibold text-zinc-400">มัดกล้ามเนื้อที่เลือก (4 มัด):</span>
+          <div class="flex items-center justify-between mb-1.5">
+            <span id="selected-muscle-count" class="text-xs font-semibold text-zinc-400">มัดกล้ามเนื้อ (เลือกแล้ว 4/16):</span>
           </div>
-          <div id="muscle-pill-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-1.5"></div>
+          <div id="muscle-pill-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 max-h-44 overflow-y-auto pr-1 mt-1.5"></div>
         </div>
       </div>
 
-      <!-- 2. MULTI-SELECT EQUIPMENT + MODALITY + TIME GENERATOR (7 Columns) -->
-      <div class="lg:col-span-7 flex flex-col gap-5">
-
+      <!-- 2. EQUIPMENT (11 ITEMS) + MODALITY ENGINE + LOW-IMPACT + TIME (7 Cols) -->
+      <div id="sec-config" class="lg:col-span-7 flex flex-col gap-5">
         <!-- Multi-Select Equipment Filter -->
         <div class="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-4 sm:p-5">
           <div class="flex items-center justify-between mb-3">
             <div>
               <span class="text-[11px] font-bold uppercase tracking-wider text-orange-400">
-                2. Multi-Select Equipment Filter
+                2. Multi-Select Equipment • 11 อุปกรณ์ (รวมเสื่อ & บล็อกโยคะ)
               </span>
-              <h2 class="text-base font-extrabold text-white">
-                เลือกอุปกรณ์ที่มีอยู่จริง (เลือกผสมได้หลายรายการ)
-              </h2>
+              <h2 class="text-base font-extrabold text-white">เลือกอุปกรณ์ที่มีอยู่จริง</h2>
             </div>
-            <span id="equip-count-label" class="text-xs font-semibold text-zinc-400">เลือกแล้ว 2 รายการ</span>
+            <span id="equip-count-label" class="text-xs font-semibold text-zinc-400">เลือกแล้ว 3 รายการ</span>
           </div>
           <div id="equipment-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
         </div>
 
-        <!-- Training Modality Engine (HIIT / REHIT / Cardio) + Duration & Level -->
+        <!-- Training Modality Engine (HIIT / REHIT / CARDIO / YOGA / 7MIN) -->
         <div class="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-4 sm:p-5 space-y-4">
-          <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-orange-400">
-              3 & 4. Training Modality Engine & Time-Bounded Generator
-            </span>
-            <h2 class="text-base font-extrabold text-white">
-              เลือกรูปแบบการฝึกตามหลักวิทยาศาสตร์การกีฬา และเวลาเป้าหมาย
-            </h2>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-orange-400">
+                3 & 4. Physiology Engine (HIIT / REHIT / Cardio / Yoga / 7-Min)
+              </span>
+              <h2 class="text-base font-extrabold text-white">รูปแบบการฝึก & เวลาเป้าหมาย</h2>
+            </div>
+
+            <button id="btn-low-impact" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold border bg-zinc-950 text-zinc-400 border-zinc-800 transition">
+              🦵 Low-Impact: ปิด
+            </button>
           </div>
 
-          <div id="modality-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5"></div>
+          <div id="modality-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"></div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div>
-              <label class="block text-xs font-bold text-zinc-400 mb-1.5">ระดับความฟิต (Fitness Level):</label>
+              <label class="block text-xs font-bold text-zinc-400 mb-1.5">ระดับความฟิต:</label>
               <div id="level-grid" class="grid grid-cols-3 gap-1.5"></div>
             </div>
             <div>
-              <label class="block text-xs font-bold text-zinc-400 mb-1.5">กรอบเวลาเป้าหมาย (Time-Bounded):</label>
-              <div id="duration-grid" class="grid grid-cols-5 gap-1.5"></div>
+              <label class="block text-xs font-bold text-zinc-400 mb-1.5">เวลาเป้าหมาย (นาที):</label>
+              <div id="duration-grid" class="grid grid-cols-6 gap-1"></div>
             </div>
           </div>
 
-          <!-- Schedule Metrics Summary Bar -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 text-center">
+          <!-- Schedule Metrics Summary -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
             <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-2.5">
               <span class="text-[11px] text-zinc-400">Warm-up</span>
               <p id="sum-warmup" class="font-mono text-sm font-extrabold text-amber-400 mt-0.5">120s</p>
             </div>
             <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-2.5">
-              <span class="text-[11px] text-zinc-400">Work / Sprint</span>
+              <span class="text-[11px] text-zinc-400">Work / Asana</span>
               <p id="sum-work" class="font-mono text-sm font-extrabold text-orange-400 mt-0.5">660s</p>
             </div>
             <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-2.5">
-              <span class="text-[11px] text-zinc-400">Rest / Recovery</span>
+              <span class="text-[11px] text-zinc-400">Rest / Breath</span>
               <p id="sum-rest" class="font-mono text-sm font-extrabold text-cyan-400 mt-0.5">330s</p>
             </div>
             <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-2.5">
@@ -237,148 +255,170 @@
       </div>
     </section>
 
-    <!-- BOTTOM GRID: Synchronized Workout Player (Left 7 Cols) + Schedule & Swap List (Right 5 Cols) -->
-    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- SECTION B: LIVE LOOPING VIDEO PLAYER & TIMELINE -->
+    <section id="sec-workout" class="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-      <!-- 5 & 6. REALISTIC VISUAL + MOTION STAGE & SYNCHRONIZED WORKOUT TIMER -->
-      <div id="live-stage-card" class="lg:col-span-7 bg-zinc-900/95 border border-zinc-800 rounded-3xl p-5 flex flex-col justify-between gap-4 shadow-2xl transition-all">
+      <!-- LOOPING VIDEO WORKOUT STAGE (7 Cols) -->
+      <div id="live-stage-card" class="lg:col-span-7 bg-zinc-900/95 border border-zinc-800 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-4 shadow-2xl transition-all">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2">
             <span id="stage-phase-badge" class="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
               WARM-UP 1/2
             </span>
-            <span id="stage-step-counter" class="text-xs text-zinc-400 font-mono">ลำดับที่ 1/20</span>
+            <span id="stage-step-counter" class="text-xs text-zinc-400 font-mono">1/20</span>
           </div>
 
-          <button id="btn-toggle-prompt" type="button" class="px-3 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-orange-300 border border-zinc-700">
-            ✨ ดู AI Realistic Prompt ท่านี้
+          <button id="btn-toggle-prompt" type="button" class="px-2.5 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-orange-300 border border-zinc-700">
+            ✨ AI Video Prompt
           </button>
         </div>
 
         <div>
-          <h2 id="stage-title-th" class="text-xl sm:text-2xl font-extrabold text-white leading-tight">
-            วอร์มอัพเปิดข้อไหล่ หมุนลำตัว และกระตุ้นการไหลเวียนเลือด
+          <h2 id="stage-title-th" class="text-lg sm:text-2xl font-extrabold text-white leading-tight">
+            วอร์มอัพเปิดข้อไหล่และกระตุ้นระบบไหลเวียนเลือด
           </h2>
-          <p id="stage-title-en" class="text-xs sm:text-sm text-zinc-400 mt-0.5">
-            Dynamic Full-Body Mobility & Arm Circles
-          </p>
+          <p id="stage-title-en" class="text-xs sm:text-sm text-zinc-400 mt-0.5">Dynamic Full-Body Mobility</p>
         </div>
 
-        <!-- Visual Demonstration + Countdown Clock Grid -->
+        <!-- Looping Video + 7-Minute Ring Timer Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-stretch">
-          <!-- Photorealistic Studio Visual + Animated Biomechanical Motion Vector Overlay -->
-          <div class="sm:col-span-7 relative rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800 min-h-[250px] flex flex-col justify-between">
-            <img id="stage-media-img" src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=900&q=80" alt="Exercise visual" class="absolute inset-0 w-full h-full object-cover opacity-80 transition-opacity duration-200" />
-            <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/30 to-transparent"></div>
+          <!-- HTML5 <video> Looping Exercise Stream -->
+          <div class="sm:col-span-7 relative rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800 min-h-[260px] flex flex-col justify-between">
+            <video id="exercise-loop-video" autoplay loop muted playsinline class="w-full h-full object-cover min-h-[260px]"></video>
+            <canvas id="exercise-fallback-canvas" width="640" height="390" class="hidden"></canvas>
 
-            <!-- Top Overlay Badges -->
-            <div class="relative z-10 p-3 flex flex-wrap items-center justify-between gap-2">
+            <div class="absolute top-12 left-3 right-3 flex flex-wrap items-center justify-between gap-1.5 pointer-events-none">
               <span id="stage-muscle-badge" class="px-2.5 py-1 rounded-lg text-[11px] font-bold text-white bg-orange-500 shadow">
-                🎯 ไหล่ (Shoulders)
+                🎯 หัวไหล่หน้าและข้าง
               </span>
-              <span id="preload-status-badge" class="hidden px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-500 text-zinc-950">
-                ⚡ Pre-loaded ท่าถัดไปพร้อมแล้ว
+              <span id="preload-status-badge" class="hidden px-2 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-500 text-zinc-950">
+                ⚡ วิดีโอท่าถัดไปพร้อมแล้ว
               </span>
             </div>
 
-            <!-- Animated Biomechanical Silhouette Vector Guide + Form Cue -->
-            <div class="relative z-10 p-3 space-y-2">
-              <div class="inline-flex items-center gap-2 bg-zinc-900/90 backdrop-blur-md border border-orange-500/40 px-2.5 py-1 rounded-xl anim-vector">
-                <span class="text-xs">⚡</span>
-                <span id="stage-motion-label" class="text-[11px] font-bold text-orange-300">Biomechanical Tempo: Controlled Eccentric → Explosive Drive</span>
+            <!-- Speed & Angle Controls -->
+            <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 bg-zinc-950/85 backdrop-blur-md border border-zinc-800 rounded-xl p-2">
+              <div class="flex items-center gap-1">
+                <button type="button" data-speed="0.5" class="vspeed-btn px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300">0.5x</button>
+                <button type="button" data-speed="1" class="vspeed-btn px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold bg-orange-500 text-white">1.0x</button>
+                <button type="button" data-speed="1.5" class="vspeed-btn px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300">1.5x</button>
               </div>
-              <div class="bg-zinc-900/95 backdrop-blur-md border border-zinc-800 rounded-xl p-2.5">
-                <p class="text-[11px] font-bold text-orange-400">คำแนะนำการจัดระเบียบร่างกาย (Form Cue):</p>
-                <p id="stage-form-cues" class="text-xs text-zinc-200 leading-snug mt-0.5">
-                  หมุนหัวไหล่กว้างๆ สลับบิดลำตัวซ้าย-ขวา หายใจเข้าออกลึกๆ
-                </p>
+              <div class="flex items-center gap-1">
+                <button type="button" data-angle="side" class="vangle-btn px-2 py-0.5 rounded-lg text-[10px] font-bold bg-cyan-500 text-zinc-950">ข้าง (Side)</button>
+                <button type="button" data-angle="front" class="vangle-btn px-2 py-0.5 rounded-lg text-[10px] font-bold bg-zinc-800 text-zinc-300">หน้า (Front)</button>
               </div>
             </div>
           </div>
 
-          <!-- Real-Time Synchronized Timer Panel -->
-          <div class="sm:col-span-5 bg-zinc-950/90 border border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-between">
-            <span id="timer-mode-label" class="text-[11px] font-bold uppercase tracking-widest text-zinc-400">
-              INTERVAL COUNTDOWN
-            </span>
-
-            <div id="stage-clock" class="font-mono font-extrabold text-5xl sm:text-6xl my-3 tracking-tight text-white">
-              01:00
+          <!-- 7-Minute SVG Ring Countdown + Yoga Breath Pacer -->
+          <div class="sm:col-span-5 bg-zinc-950/90 border border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-between gap-3">
+            <div class="relative w-32 h-32 flex items-center justify-center">
+              <svg class="w-32 h-32 -rotate-90" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" stroke="#27272a" stroke-width="8" fill="none" />
+                <circle id="ring-progress-circle" cx="60" cy="60" r="52" stroke="#f97316" stroke-width="8" stroke-linecap="round" fill="none" stroke-dasharray="326.73" stroke-dashoffset="326.73" class="transition-all duration-200" />
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span id="timer-mode-label" class="text-[9px] font-bold uppercase tracking-widest text-zinc-400">WORK</span>
+                <span id="stage-clock" class="font-mono font-extrabold text-3xl tracking-tight text-white">01:00</span>
+              </div>
             </div>
 
-            <!-- Step Progress Bar -->
-            <div class="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden my-2">
-              <div id="step-progress-bar" class="h-full bg-orange-500 transition-all duration-200" style="width: 0%"></div>
+            <!-- Pranayama Breath Pacer -->
+            <div id="breath-pacer-box" class="hidden w-full rounded-xl border border-emerald-400/50 bg-zinc-900/80 px-2.5 py-2 text-center transition-all duration-700">
+              <span id="breath-pacer-label" class="text-[11px] font-bold text-emerald-300">สูดหายใจเข้าลึก (Inhale 4s)</span>
             </div>
 
-            <!-- Controls -->
-            <div class="flex items-center gap-2 w-full mt-2">
-              <button id="btn-prev-step" type="button" class="px-3 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200">
-                ⏮
-              </button>
-              <button id="btn-play-pause" type="button" class="flex-1 py-2.5 px-4 rounded-xl font-extrabold text-xs sm:text-sm bg-orange-500 hover:bg-orange-400 text-white shadow-lg shadow-orange-500/25 transition">
-                ▶ เริ่มจับเวลาฝึก
-              </button>
-              <button id="btn-next-step" type="button" class="px-3 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200">
-                ⏭
-              </button>
+            <div class="flex items-center gap-2 w-full">
+              <button id="btn-prev-step" type="button" class="px-3 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200">⏮</button>
+              <button id="btn-play-pause" type="button" class="flex-1 py-2.5 px-3 rounded-xl font-extrabold text-xs sm:text-sm bg-orange-500 hover:bg-orange-400 text-white shadow-lg shadow-orange-500/25 transition">▶ เริ่มฝึก</button>
+              <button id="btn-next-step" type="button" class="px-3 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200">⏭</button>
             </div>
           </div>
         </div>
 
-        <!-- Collapsible AI Prompt Blueprint Box -->
+        <!-- Form Cues + JEFIT EMG Activation % -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="bg-zinc-950/90 border border-zinc-800 rounded-2xl p-3">
+            <p class="text-[11px] font-bold text-orange-400">การจัดระเบียบร่างกาย (Form Cue):</p>
+            <p id="stage-form-cues" class="text-xs text-zinc-200 leading-relaxed mt-1"></p>
+          </div>
+          <div class="bg-zinc-950/90 border border-zinc-800 rounded-2xl p-3 space-y-1.5">
+            <p class="text-[11px] font-bold text-cyan-400">JEFIT EMG Muscle Activation %:</p>
+            <div id="emg-bars-container" class="space-y-1.5"></div>
+          </div>
+        </div>
+
+        <!-- AI Prompt Drawer -->
         <div id="ai-prompt-drawer" class="hidden bg-zinc-950 border border-orange-500/40 rounded-2xl p-3.5 text-xs space-y-2">
           <div class="flex items-center justify-between">
-            <span class="font-bold text-orange-400">🤖 AI Realistic Studio Image & Motion Loop Prompt Blueprint</span>
+            <span class="font-bold text-orange-400">🤖 AI Looping Video & Image Prompt</span>
             <button id="btn-close-prompt" type="button" class="text-zinc-400 hover:text-white">✕ ปิด</button>
           </div>
-          <div>
-            <p class="text-[11px] font-semibold text-zinc-400">Photorealistic Image Prompt (Imagen 3 / Flux):</p>
-            <p id="prompt-image-text" class="font-mono text-[11px] text-zinc-200 bg-zinc-900 p-2 rounded-lg mt-0.5"></p>
-          </div>
-          <div>
-            <p class="text-[11px] font-semibold text-zinc-400">Looping Motion Video/GIF Prompt (Veo / Runway / Kling):</p>
-            <p id="prompt-motion-text" class="font-mono text-[11px] text-cyan-200 bg-zinc-900 p-2 rounded-lg mt-0.5"></p>
-          </div>
+          <p id="prompt-image-text" class="font-mono text-[11px] text-zinc-200 bg-zinc-900 p-2 rounded-lg"></p>
+          <p id="prompt-motion-text" class="font-mono text-[11px] text-cyan-200 bg-zinc-900 p-2 rounded-lg"></p>
         </div>
 
-        <!-- Up Next Preview Card -->
+        <!-- Up Next Preview -->
         <div class="bg-zinc-950/90 border border-zinc-800 rounded-2xl p-3 flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3 min-w-0">
-            <img id="up-next-img" src="https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=900&q=80" alt="Up Next" class="w-14 h-14 rounded-xl object-cover border border-zinc-700 shrink-0" />
-            <div class="min-w-0">
-              <span id="up-next-badge" class="text-[10px] font-extrabold uppercase tracking-wider text-orange-400">
-                ท่าถัดไป (UP NEXT)
-              </span>
-              <p id="up-next-title-th" class="text-xs sm:text-sm font-bold text-white truncate">วอร์มอัพยืดสะโพกและย่อสควอท</p>
-              <p id="up-next-title-en" class="text-[11px] text-zinc-400 truncate">World's Greatest Stretch & Squat Opener</p>
-            </div>
+          <div class="min-w-0">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-orange-400">ท่าถัดไป (UP NEXT)</span>
+            <p id="up-next-title-th" class="text-xs sm:text-sm font-bold text-white truncate">ท่าถัดไป</p>
+            <p id="up-next-title-en" class="text-[11px] text-zinc-400 truncate">Up Next</p>
           </div>
-          <span id="up-next-dur" class="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-zinc-900 text-zinc-300 border border-zinc-800 shrink-0">
-            60s
-          </span>
+          <span id="up-next-dur" class="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-zinc-900 text-zinc-300 border border-zinc-800 shrink-0">40s</span>
         </div>
       </div>
 
-      <!-- SCHEDULE TIMELINE & SWAP EXERCISE PANEL (5 Columns) -->
-      <div class="lg:col-span-5 bg-zinc-900/95 border border-zinc-800 rounded-3xl p-4 sm:p-5 flex flex-col gap-3 max-h-[650px]">
-        <div class="flex items-center justify-between">
+      <!-- SCHEDULE TIMELINE & SWAP PANEL + JEFIT STATS (5 Cols) -->
+      <div id="sec-stats" class="lg:col-span-5 flex flex-col gap-4">
+        <div class="bg-zinc-900/95 border border-zinc-800 rounded-3xl p-4 sm:p-5 flex flex-col gap-3 max-h-[470px]">
           <div>
-            <h3 id="schedule-header-title" class="text-sm sm:text-base font-extrabold text-white">
-              ตารางฝึกซ้อมทั้งหมด (20 นาที)
-            </h3>
-            <p class="text-[11px] text-zinc-400">
-              คลิกที่ท่าเพื่อข้ามไปยังช่วงเวลานั้น หรือกด 🔀 เพื่อสลับท่าใหม่ทันที
-            </p>
+            <h3 id="schedule-header-title" class="text-sm sm:text-base font-extrabold text-white">ตารางฝึกซ้อม (20 นาที)</h3>
+            <p class="text-[11px] text-zinc-400">แตะเพื่อข้ามไปยังช่วงเวลานั้น หรือกด 🔀 เพื่อสลับท่า</p>
           </div>
+          <div id="schedule-timeline-list" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
         </div>
-        <div id="schedule-timeline-list" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
-      </div>
 
+        <!-- JEFIT Recovery & Session Telemetry Card -->
+        <div class="bg-zinc-900/95 border border-zinc-800 rounded-3xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold text-emerald-400">📊 JEFIT Workout Tracker & Recovery</span>
+            <span id="stats-summary-pill" class="text-[11px] font-mono text-zinc-300">0 เซสชัน • 0 kcal</span>
+          </div>
+          <p class="text-[11px] text-zinc-400">
+            ระบบบันทึกการฝึกอัตโนมัติลงในอุปกรณ์ (LocalStorage) และปรับสีฟื้นตัวบนโมเดล 3D โหมด 🔥 EMG
+          </p>
+        </div>
+      </div>
     </section>
   </main>
 
-  <!-- Application Module Script -->
+  <!-- Play Store / Mobile Bottom Navigation Bar -->
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 grid grid-cols-4 px-2 py-1.5">
+    <button type="button" data-mnav="sec-3d" class="mnav-btn flex flex-col items-center py-1 rounded-xl text-orange-400 bg-orange-500/10">
+      <span class="text-lg">🧬</span><span class="text-[10px] font-bold">3D กายวิภาค</span>
+    </button>
+    <button type="button" data-mnav="sec-config" class="mnav-btn flex flex-col items-center py-1 rounded-xl text-zinc-400">
+      <span class="text-lg">⚙️</span><span class="text-[10px] font-bold">จัดตาราง</span>
+    </button>
+    <button type="button" data-mnav="sec-workout" class="mnav-btn flex flex-col items-center py-1 rounded-xl text-zinc-400">
+      <span class="text-lg">🎬</span><span class="text-[10px] font-bold">วิดีโอฝึกสด</span>
+    </button>
+    <button type="button" data-mnav="sec-stats" class="mnav-btn flex flex-col items-center py-1 rounded-xl text-zinc-400">
+      <span class="text-lg">📊</span><span class="text-[10px] font-bold">ตาราง/สถิติ</span>
+    </button>
+  </nav>
+
+  <!-- Register Service Worker for Offline PWA / Play Store TWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+
+  <!-- Main Module Script -->
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -388,19 +428,23 @@
       TRAINING_MODALITIES,
       generateTimeBoundedSchedule,
       swapExerciseInSchedule,
+      loadWorkoutStats,
+      logCompletedWorkoutSession,
+      getMuscleRecoveryPercent,
       MediaPreloader
     } from './src/WorkoutEngine.js';
+    import { buildMedicalAnatomyGroup, applyMedicalViewModeColors } from './src/Body3DAnatomy.js';
+    import { BiomechanicalVideoLoopEngine } from './src/ExerciseVideoEngine.js';
 
-    // =========================================================================
-    // 1. GLOBAL APPLICATION STATE
-    // =========================================================================
     const state = {
-      selectedMuscles: ['chest', 'back', 'quads', 'core'],
+      selectedMuscles: ['chest_upper_Mid', 'lats_teres', 'quads', 'abs_rectus'],
       isFullBody: false,
-      selectedEquipment: ['bodyweight', 'dumbbell', 'bench'],
+      selectedEquipment: ['bodyweight', 'dumbbell', 'yoga_mat'],
       modality: 'HIIT',
       fitnessLevel: 'intermediate',
       durationMinutes: 20,
+      lowImpactOnly: false,
+      viewMode: 'ecorche',
       schedule: null,
       currentIndex: 0,
       remainingSec: 60,
@@ -408,165 +452,79 @@
       soundEnabled: true,
       voiceEnabled: true,
       notifyEnabled: false,
-      hoveredMuscle: null
+      hoveredMuscle: null,
+      stats: loadWorkoutStats()
     };
 
     const preloader = new MediaPreloader();
+    const videoEngine = new BiomechanicalVideoLoopEngine({ width: 640, height: 390, fps: 30 });
     let audioCtx = null;
+    let wakeLock = null;
     let lastTickMs = null;
     let accMs = 0;
+    let breathTick = 0;
 
-    // =========================================================================
-    // 2. THREE.JS 3D ANATOMICAL MUSCLE SELECTOR INITIALIZATION
-    // =========================================================================
+    // Attach Looping Video Engine
+    videoEngine.attachToVideo(
+      document.getElementById('exercise-loop-video'),
+      document.getElementById('exercise-fallback-canvas')
+    );
+
+    // 1. Setup 3D Medical Anatomy Viewport
     const container = document.getElementById('three-canvas-container');
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#09090b');
+    scene.background = new THREE.Color('#07070b');
 
-    const camera = new THREE.PerspectiveCamera(38, container.clientWidth / container.clientHeight, 0.1, 100);
-    camera.position.set(0, 1.05, 5.4);
+    const camera = new THREE.PerspectiveCamera(36, (container.clientWidth || 400) / (container.clientHeight || 400), 0.1, 100);
+    camera.position.set(0, 1.05, 5.2);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(container.clientWidth || 400, container.clientHeight || 400);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.07;
-    controls.target.set(0, 0.85, 0);
-    controls.minDistance = 2.6;
-    controls.maxDistance = 8.0;
+    controls.target.set(0, 0.9, 0);
+    controls.minDistance = 2.4;
+    controls.maxDistance = 7.8;
 
-    // 3-Point Studio Lighting
-    scene.add(new THREE.AmbientLight('#ffffff', 0.65));
-    const keyLight = new THREE.DirectionalLight('#fff7ed', 1.45);
+    scene.add(new THREE.AmbientLight('#ffffff', 0.72));
+    const keyLight = new THREE.DirectionalLight('#fff5eb', 1.65);
     keyLight.position.set(3.5, 5.5, 4.5);
     scene.add(keyLight);
-
     const rimLight = new THREE.DirectionalLight('#38bdf8', 0.95);
-    rimLight.position.set(-4.0, 3.5, -4.5);
+    rimLight.position.set(-4.2, 3.2, -4.2);
     scene.add(rimLight);
 
     const gridHelper = new THREE.PolarGridHelper(1.55, 16, 6, 64, '#27272a', '#18181b');
     gridHelper.position.y = -0.95;
     scene.add(gridHelper);
 
-    const bodyGroup = new THREE.Group();
+    const { bodyGroup, muscleMeshes } = buildMedicalAnatomyGroup();
     scene.add(bodyGroup);
 
-    const glassMaterial = new THREE.MeshPhysicalMaterial({
-      color: '#64748b',
-      transparent: true,
-      opacity: 0.22,
-      roughness: 0.25,
-      metalness: 0.1,
-      transmission: 0.35,
-      depthWrite: false
-    });
-
-    // Translucent Anatomical Core
-    const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.24, 28, 28), glassMaterial);
-    headMesh.scale.set(0.88, 1.12, 0.95);
-    headMesh.position.set(0, 2.28, 0);
-    bodyGroup.add(headMesh);
-
-    const neckMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.22, 20), glassMaterial);
-    neckMesh.position.set(0, 2.02, 0);
-    bodyGroup.add(neckMesh);
-
-    const torsoCore = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.31, 1.15, 24), glassMaterial);
-    torsoCore.scale.set(1.18, 1.0, 0.72);
-    torsoCore.position.set(0, 1.35, 0);
-    bodyGroup.add(torsoCore);
-
-    const pelvisCore = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.34, 0.34, 24), glassMaterial);
-    pelvisCore.scale.set(1.15, 1.0, 0.78);
-    pelvisCore.position.set(0, 0.65, 0);
-    bodyGroup.add(pelvisCore);
-
-    [-1, 1].forEach(side => {
-      const forearm = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.36, 12, 16), glassMaterial);
-      forearm.position.set(side * 0.68, 0.92, 0.04);
-      forearm.rotation.z = side * 0.08;
-      bodyGroup.add(forearm);
-
-      const foot = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 0.32), glassMaterial);
-      foot.position.set(side * 0.23, -0.89, 0.08);
-      bodyGroup.add(foot);
-    });
-
-    const muscleMeshes = [];
-    const sphereGeo = new THREE.SphereGeometry(1, 24, 24);
-    const capsuleGeo = new THREE.CapsuleGeometry(1, 1, 16, 24);
-
-    function addMuscleMesh(muscleId, geo, pos, scale, rot = [0, 0, 0]) {
-      const meta = MUSCLE_GROUPS.find(m => m.id === muscleId);
-      const mat = new THREE.MeshStandardMaterial({
-        color: '#3f3f46',
-        emissive: '#000000',
-        roughness: 0.35,
-        metalness: 0.2
-      });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(...pos);
-      mesh.scale.set(...scale);
-      mesh.rotation.set(...rot);
-      mesh.userData = { muscleId, meta };
-      bodyGroup.add(mesh);
-      muscleMeshes.push(mesh);
+    function getRecoveryMap() {
+      const m = {};
+      MUSCLE_GROUPS.forEach(g => { m[g.id] = getMuscleRecoveryPercent(state.stats, g.id); });
+      return m;
     }
-
-    [-1, 1].forEach(side => {
-      addMuscleMesh('chest', sphereGeo, [side * 0.2, 1.64, 0.22], [0.21, 0.16, 0.11], [0, 0, side * -0.15]);
-      addMuscleMesh('back', sphereGeo, [side * 0.22, 1.54, -0.21], [0.23, 0.32, 0.11], [0, 0, side * 0.18]);
-      addMuscleMesh('back', sphereGeo, [side * 0.14, 1.84, -0.17], [0.16, 0.14, 0.09]);
-      addMuscleMesh('shoulders', sphereGeo, [side * 0.52, 1.74, 0.02], [0.16, 0.18, 0.16], [0, 0, side * -0.2]);
-      addMuscleMesh('biceps', capsuleGeo, [side * 0.59, 1.38, 0.09], [0.085, 0.22, 0.085], [0, 0, side * 0.1]);
-      addMuscleMesh('triceps', capsuleGeo, [side * 0.60, 1.38, -0.08], [0.09, 0.23, 0.09], [0, 0, side * 0.1]);
-      addMuscleMesh('core', sphereGeo, [side * 0.27, 1.14, 0.12], [0.08, 0.24, 0.11]);
-      addMuscleMesh('glutes', sphereGeo, [side * 0.19, 0.64, -0.21], [0.19, 0.21, 0.16]);
-      addMuscleMesh('quads', capsuleGeo, [side * 0.23, 0.12, 0.10], [0.145, 0.36, 0.135], [0, 0, side * 0.03]);
-      addMuscleMesh('hamstrings', capsuleGeo, [side * 0.23, 0.12, -0.10], [0.135, 0.35, 0.125], [0, 0, side * 0.03]);
-      addMuscleMesh('calves', capsuleGeo, [side * 0.23, -0.52, -0.06], [0.105, 0.26, 0.11]);
-    });
-    [1.38, 1.18, 0.98].forEach(y => {
-      [-1, 1].forEach(side => {
-        addMuscleMesh('core', sphereGeo, [side * 0.10, y, 0.23], [0.095, 0.085, 0.07]);
-      });
-    });
 
     function refresh3DMuscleColors() {
-      const currentStep = state.schedule?.steps?.[state.currentIndex];
-      const liveMuscle = state.isRunning && currentStep ? currentStep.primaryMuscle : null;
-
-      muscleMeshes.forEach(mesh => {
-        const { muscleId, meta } = mesh.userData;
-        const isSelected = state.isFullBody || state.selectedMuscles.includes(muscleId);
-        const isHovered = state.hoveredMuscle === muscleId;
-        const isLive = liveMuscle === muscleId;
-
-        if (isLive) {
-          mesh.material.color.set('#f97316');
-          mesh.material.emissive.set('#ea580c');
-          mesh.material.emissiveIntensity = 0.85;
-        } else if (isSelected) {
-          mesh.material.color.set(meta.color);
-          mesh.material.emissive.set(meta.color);
-          mesh.material.emissiveIntensity = isHovered ? 0.65 : 0.42;
-        } else if (isHovered) {
-          mesh.material.color.set(meta.color);
-          mesh.material.emissive.set(meta.color);
-          mesh.material.emissiveIntensity = 0.28;
-        } else {
-          mesh.material.color.set('#3f3f46');
-          mesh.material.emissive.set('#000000');
-          mesh.material.emissiveIntensity = 0;
-        }
+      const curStep = state.schedule?.steps?.[state.currentIndex];
+      applyMedicalViewModeColors({
+        muscleMeshes,
+        selectedMuscles: state.selectedMuscles,
+        isFullBody: state.isFullBody,
+        hoveredMuscle: state.hoveredMuscle,
+        activeHighlightMuscle: state.isRunning && curStep ? curStep.primaryMuscle : null,
+        viewMode: state.viewMode,
+        recoveryStats: getRecoveryMap()
       });
     }
 
-    // Raycaster for 3D muscle picking
+    // Raycaster
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     let downCoords = { x: 0, y: 0 };
@@ -582,33 +540,28 @@
 
     renderer.domElement.addEventListener('pointermove', e => {
       const hits = pickMuscle(e.clientX, e.clientY);
-      const titleEl = document.getElementById('muscle-hover-title');
-      const subEl = document.getElementById('muscle-hover-sub');
+      const tEl = document.getElementById('muscle-hover-title');
+      const sEl = document.getElementById('muscle-hover-sub');
       if (hits.length > 0) {
         const { muscleId, meta } = hits[0].object.userData;
         state.hoveredMuscle = muscleId;
         renderer.domElement.style.cursor = 'pointer';
-        titleEl.textContent = `🎯 ${meta.nameTh}`;
-        subEl.textContent = meta.description;
+        tEl.textContent = `🎯 ${meta.nameTh}`;
+        sEl.textContent = `จุดยึดเกาะ: ${meta.originInsertion}`;
       } else {
         state.hoveredMuscle = null;
         renderer.domElement.style.cursor = 'grab';
-        titleEl.textContent = '🖱️ ลากหมุน 360° • คลิกที่มัดกล้ามเนื้อเพื่อเลือก';
-        subEl.textContent = 'Translucent Anatomical WebGL Model';
+        tEl.textContent = '🖱️ ลากหมุน 360° • คลิกที่ใยกล้ามเนื้อ 16 มัด';
+        sEl.textContent = 'Medical Myofibril Striations + Internal Skeleton';
       }
       refresh3DMuscleColors();
     });
 
-    renderer.domElement.addEventListener('pointerdown', e => {
-      downCoords = { x: e.clientX, y: e.clientY };
-    });
-
+    renderer.domElement.addEventListener('pointerdown', e => { downCoords = { x: e.clientX, y: e.clientY }; });
     renderer.domElement.addEventListener('pointerup', e => {
       if (Math.hypot(e.clientX - downCoords.x, e.clientY - downCoords.y) < 7) {
         const hits = pickMuscle(e.clientX, e.clientY);
-        if (hits.length > 0) {
-          toggleMuscleSelection(hits[0].object.userData.muscleId);
-        }
+        if (hits.length > 0) toggleMuscleSelection(hits[0].object.userData.muscleId);
       }
     });
 
@@ -625,89 +578,113 @@
 
     window.addEventListener('resize', () => {
       if (!container) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.aspect = (container.clientWidth || 400) / (container.clientHeight || 400);
       camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setSize(container.clientWidth || 400, container.clientHeight || 400);
     });
 
-    // Camera Buttons
+    // View mode, camera & zoom buttons
+    document.querySelectorAll('.vmode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.viewMode = btn.dataset.vmode;
+        document.querySelectorAll('.vmode-btn').forEach(b => {
+          b.className = 'vmode-btn py-1.5 px-2 rounded-xl text-[11px] font-bold text-zinc-400 hover:text-white';
+        });
+        btn.className = 'vmode-btn py-1.5 px-2 rounded-xl text-[11px] font-bold bg-orange-500 text-white';
+        refresh3DMuscleColors();
+      });
+    });
+
     document.querySelectorAll('.cam-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.cam-btn').forEach(b => {
-          b.className = 'cam-btn px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-300 hover:text-white';
-        });
+        document.querySelectorAll('.cam-btn').forEach(b => { b.className = 'cam-btn px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-300'; });
         btn.className = 'cam-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-orange-500 text-white';
-        const view = btn.dataset.cam;
-        if (view === 'front') targetCamPos = new THREE.Vector3(0, 1.05, 5.4);
-        else if (view === 'back') targetCamPos = new THREE.Vector3(0, 1.05, -5.4);
-        else targetCamPos = new THREE.Vector3(4.6, 1.05, 2.4);
+        const v = btn.dataset.cam;
+        targetCamPos = v === 'front' ? new THREE.Vector3(0, 1.05, 5.2) : v === 'back' ? new THREE.Vector3(0, 1.05, -5.2) : new THREE.Vector3(4.6, 1.05, 2.2);
       });
     });
 
     document.getElementById('btn-zoom-in').addEventListener('click', () => {
       const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
-      const d = Math.max(2.8, camera.position.distanceTo(controls.target) - 0.8);
-      targetCamPos = controls.target.clone().addScaledVector(dir, d);
+      targetCamPos = controls.target.clone().addScaledVector(dir, Math.max(2.5, camera.position.distanceTo(controls.target) - 0.7));
     });
     document.getElementById('btn-zoom-out').addEventListener('click', () => {
       const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
-      const d = Math.min(7.5, camera.position.distanceTo(controls.target) + 0.8);
-      targetCamPos = controls.target.clone().addScaledVector(dir, d);
+      targetCamPos = controls.target.clone().addScaledVector(dir, Math.min(7.5, camera.position.distanceTo(controls.target) + 0.7));
     });
 
-    // =========================================================================
-    // 3. UI RENDERERS & INTERACTION HANDLERS
-    // =========================================================================
-    function toggleMuscleSelection(muscleId) {
+    // 2. Config UI & Schedule Builder
+    function toggleMuscleSelection(mId) {
       state.isFullBody = false;
-      if (state.selectedMuscles.includes(muscleId)) {
-        if (state.selectedMuscles.length > 1) {
-          state.selectedMuscles = state.selectedMuscles.filter(id => id !== muscleId);
-        }
+      if (state.selectedMuscles.includes(mId)) {
+        if (state.selectedMuscles.length > 1) state.selectedMuscles = state.selectedMuscles.filter(id => id !== mId);
       } else {
-        state.selectedMuscles = [...state.selectedMuscles, muscleId];
+        state.selectedMuscles = [...state.selectedMuscles, mId];
       }
       rebuildScheduleAndRender();
     }
 
     document.getElementById('btn-full-body').addEventListener('click', () => {
       state.isFullBody = !state.isFullBody;
-      if (state.isFullBody) {
-        state.selectedMuscles = MUSCLE_GROUPS.map(m => m.id);
-      }
+      if (state.isFullBody) state.selectedMuscles = MUSCLE_GROUPS.map(m => m.id);
       rebuildScheduleAndRender();
     });
 
+    document.getElementById('btn-low-impact').addEventListener('click', () => {
+      state.lowImpactOnly = !state.lowImpactOnly;
+      rebuildScheduleAndRender();
+    });
+
+    document.getElementById('btn-quick-7min').addEventListener('click', () => {
+      state.isFullBody = true;
+      state.selectedMuscles = MUSCLE_GROUPS.map(m => m.id);
+      state.modality = '7MIN';
+      state.durationMinutes = 7;
+      rebuildScheduleAndRender();
+      document.getElementById('sec-workout').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    document.getElementById('btn-quick-yoga').addEventListener('click', () => {
+      state.isFullBody = true;
+      state.selectedMuscles = MUSCLE_GROUPS.map(m => m.id);
+      if (!state.selectedEquipment.includes('yoga_mat')) state.selectedEquipment.push('yoga_mat');
+      state.modality = 'YOGA';
+      state.lowImpactOnly = true;
+      state.durationMinutes = 15;
+      rebuildScheduleAndRender();
+      document.getElementById('sec-workout').scrollIntoView({ behavior: 'smooth' });
+    });
+
     function renderConfigControls() {
-      // Full Body Button highlight
       const fbBtn = document.getElementById('btn-full-body');
       fbBtn.className = state.isFullBody
-        ? 'px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border bg-orange-500 text-white border-orange-400 shadow-lg shadow-orange-500/25'
-        : 'px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border bg-zinc-800 text-zinc-200 border-zinc-700 hover:border-orange-500';
+        ? 'px-3 py-1.5 rounded-xl text-xs font-bold border bg-orange-500 text-white border-orange-400 shadow'
+        : 'px-3 py-1.5 rounded-xl text-xs font-bold border bg-zinc-800 text-zinc-200 border-zinc-700';
 
-      // Muscle Pills
+      const liBtn = document.getElementById('btn-low-impact');
+      liBtn.textContent = state.lowImpactOnly ? '🛡️ Low-Impact: เปิด (ถนอมข้อต่อ)' : '🦵 Low-Impact: ปิด';
+      liBtn.className = state.lowImpactOnly
+        ? 'px-3 py-1.5 rounded-xl text-xs font-bold border bg-cyan-500/20 text-cyan-300 border-cyan-500'
+        : 'px-3 py-1.5 rounded-xl text-xs font-bold border bg-zinc-950 text-zinc-400 border-zinc-800';
+
+      const recMap = getRecoveryMap();
       document.getElementById('selected-muscle-count').textContent =
-        `มัดกล้ามเนื้อที่เลือก (${state.isFullBody ? 'ครบทุกส่วน 10 มัด' : state.selectedMuscles.length + ' มัด'}):`;
+        `มัดกล้ามเนื้อ (${state.isFullBody ? 'ครบทั้งหมด 16 มัด' : `${state.selectedMuscles.length}/16 มัด`}):`;
+
       const mGrid = document.getElementById('muscle-pill-grid');
       mGrid.innerHTML = '';
       MUSCLE_GROUPS.forEach(m => {
         const active = state.isFullBody || state.selectedMuscles.includes(m.id);
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `px-2.5 py-1.5 rounded-xl text-xs font-semibold border text-left transition flex items-center gap-1.5 ${
-          active
-            ? 'bg-zinc-800 text-white border-orange-500/80'
-            : 'bg-zinc-950/60 text-zinc-400 border-zinc-800 hover:border-zinc-700'
+        btn.className = `px-2 py-1.5 rounded-xl text-[11px] font-semibold border text-left transition flex items-center justify-between gap-1 ${
+          active ? 'bg-zinc-800 text-white border-orange-500/80' : 'bg-zinc-950/60 text-zinc-400 border-zinc-800'
         }`;
-        btn.innerHTML = `
-          <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${active ? m.color : '#52525b'}"></span>
-          <span class="truncate">${m.nameTh}</span>
-        `;
+        btn.innerHTML = `<span class="flex items-center gap-1 min-w-0"><span class="w-2 h-2 rounded-full shrink-0" style="background:${active ? m.color : '#7f1d1d'}"></span><span class="truncate">${m.nameTh.split(' (')[0]}</span></span><span class="text-[9px] font-mono text-emerald-400">${recMap[m.id]}%</span>`;
         btn.onclick = () => toggleMuscleSelection(m.id);
         mGrid.appendChild(btn);
       });
 
-      // Equipment Grid
       document.getElementById('equip-count-label').textContent = `เลือกแล้ว ${state.selectedEquipment.length} รายการ`;
       const eqGrid = document.getElementById('equipment-grid');
       eqGrid.innerHTML = '';
@@ -715,17 +692,13 @@
         const active = state.selectedEquipment.includes(eq.id);
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `p-2.5 rounded-2xl border text-left transition flex items-center gap-2.5 ${
-          active
-            ? 'bg-orange-500/15 border-orange-500 text-white shadow'
-            : 'bg-zinc-950/70 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+        btn.className = `p-2 rounded-2xl border text-left transition flex items-center gap-2 ${
+          active ? 'bg-orange-500/15 border-orange-500 text-white' : 'bg-zinc-950/70 border-zinc-800 text-zinc-400'
         }`;
-        btn.innerHTML = `<span class="text-lg">${eq.icon}</span><span class="text-xs font-bold leading-snug">${eq.nameTh}</span>`;
+        btn.innerHTML = `<span class="text-base">${eq.icon}</span><span class="text-xs font-bold leading-snug">${eq.nameTh}</span>`;
         btn.onclick = () => {
           if (state.selectedEquipment.includes(eq.id)) {
-            if (state.selectedEquipment.length > 1) {
-              state.selectedEquipment = state.selectedEquipment.filter(i => i !== eq.id);
-            }
+            if (state.selectedEquipment.length > 1) state.selectedEquipment = state.selectedEquipment.filter(i => i !== eq.id);
           } else {
             state.selectedEquipment = [...state.selectedEquipment, eq.id];
           }
@@ -734,7 +707,6 @@
         eqGrid.appendChild(btn);
       });
 
-      // Modality Grid
       const modGrid = document.getElementById('modality-grid');
       modGrid.innerHTML = '';
       Object.values(TRAINING_MODALITIES).forEach(mod => {
@@ -742,96 +714,61 @@
         const proto = mod.protocolsByLevel[state.fitnessLevel];
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `p-3.5 rounded-2xl border text-left transition flex flex-col justify-between ${
-          active
-            ? 'bg-orange-500/15 border-orange-500 text-white ring-1 ring-orange-500'
-            : 'bg-zinc-950/70 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+        btn.className = `p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+          active ? 'bg-orange-500/15 border-orange-500 text-white ring-1 ring-orange-500' : 'bg-zinc-950/70 border-zinc-800 text-zinc-300'
         }`;
-        btn.innerHTML = `
-          <div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-extrabold text-white">${mod.id}</span>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-orange-300">${proto.ratioLabel}</span>
-            </div>
-            <p class="text-xs font-semibold text-zinc-300 mt-1">${mod.nameTh}</p>
-            <p class="text-[11px] text-zinc-400 mt-1 leading-relaxed">${mod.description}</p>
-          </div>
-          <p class="text-[10px] font-bold text-cyan-400 mt-2">${mod.hrZone}</p>
-        `;
+        btn.innerHTML = `<div><div class="flex items-center justify-between gap-1"><span class="text-sm font-extrabold text-white">${mod.id}</span><span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-orange-300">${proto.ratioLabel}</span></div><p class="text-xs font-semibold text-zinc-200 mt-1">${mod.nameTh}</p><p class="text-[11px] text-zinc-400 mt-1 leading-snug">${mod.description}</p></div><p class="text-[10px] font-bold text-cyan-400 mt-2">${mod.hrZone}</p>`;
         btn.onclick = () => {
           state.modality = mod.id;
+          if (mod.id === '7MIN') state.durationMinutes = 7;
           rebuildScheduleAndRender();
         };
         modGrid.appendChild(btn);
       });
 
-      // Fitness Level Grid
       const lvGrid = document.getElementById('level-grid');
       lvGrid.innerHTML = '';
-      [
-        { id: 'beginner', label: 'ผู้เริ่มต้น' },
-        { id: 'intermediate', label: 'ปานกลาง' },
-        { id: 'advanced', label: 'ขั้นสูง' }
-      ].forEach(lv => {
-        const active = state.fitnessLevel === lv.id;
+      [{ id: 'beginner', label: 'ผู้เริ่มต้น' }, { id: 'intermediate', label: 'ปานกลาง' }, { id: 'advanced', label: 'ขั้นสูง' }].forEach(lv => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `py-2 px-2.5 rounded-xl text-xs font-bold border transition ${
-          active ? 'bg-orange-500 text-white border-orange-400' : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700'
-        }`;
+        btn.className = `py-2 rounded-xl text-xs font-bold border ${state.fitnessLevel === lv.id ? 'bg-orange-500 text-white border-orange-400' : 'bg-zinc-950 text-zinc-400 border-zinc-800'}`;
         btn.textContent = lv.label;
-        btn.onclick = () => {
-          state.fitnessLevel = lv.id;
-          rebuildScheduleAndRender();
-        };
+        btn.onclick = () => { state.fitnessLevel = lv.id; rebuildScheduleAndRender(); };
         lvGrid.appendChild(btn);
       });
 
-      // Duration Grid
       const durGrid = document.getElementById('duration-grid');
       durGrid.innerHTML = '';
-      [10, 15, 20, 30, 45].forEach(mins => {
-        const active = state.durationMinutes === mins;
+      [7, 10, 15, 20, 30, 45].forEach(mins => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `py-2 rounded-xl text-xs font-mono font-extrabold border transition ${
-          active ? 'bg-orange-500 text-white border-orange-400' : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700'
-        }`;
+        btn.className = `py-2 rounded-xl text-xs font-mono font-extrabold border ${state.durationMinutes === mins ? 'bg-orange-500 text-white border-orange-400' : 'bg-zinc-950 text-zinc-400 border-zinc-800'}`;
         btn.textContent = `${mins}m`;
-        btn.onclick = () => {
-          state.durationMinutes = mins;
-          rebuildScheduleAndRender();
-        };
+        btn.onclick = () => { state.durationMinutes = mins; rebuildScheduleAndRender(); };
         durGrid.appendChild(btn);
       });
     }
 
-    // =========================================================================
-    // 4. SCHEDULE GENERATION, STAGE UI & ZERO-LATENCY PRELOADER
-    // =========================================================================
     function formatClock(sec) {
       const s = Math.max(0, Math.round(sec));
-      const m = Math.floor(s / 60);
-      const r = s % 60;
-      return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+      return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
     }
 
     function rebuildScheduleAndRender() {
       state.isRunning = false;
-      document.getElementById('btn-play-pause').textContent = '▶ เริ่มจับเวลาฝึก';
+      document.getElementById('btn-play-pause').textContent = '▶ เริ่มฝึก';
       state.schedule = generateTimeBoundedSchedule({
         selectedMuscles: state.selectedMuscles,
         isFullBody: state.isFullBody,
         selectedEquipment: state.selectedEquipment,
         modality: state.modality,
         durationMinutes: state.durationMinutes,
-        fitnessLevel: state.fitnessLevel
+        fitnessLevel: state.fitnessLevel,
+        lowImpactOnly: state.lowImpactOnly
       });
       state.currentIndex = 0;
       state.remainingSec = state.schedule.steps[0].duration;
       accMs = 0;
-
-      // Preload first 3 steps immediately
       preloader.preloadUpcomingSteps(state.schedule.steps, 0, 3);
 
       renderConfigControls();
@@ -839,6 +776,8 @@
       renderStageUI();
       renderScheduleTimeline();
       refresh3DMuscleColors();
+      document.getElementById('stats-summary-pill').textContent =
+        `${state.stats.totalSessions || 0} เซสชัน • ${state.stats.totalKcal || 0} kcal`;
     }
 
     function renderSummaryMetrics() {
@@ -848,7 +787,7 @@
       document.getElementById('sum-rest').textContent = `${summary.restSec}s`;
       document.getElementById('sum-cooldown').textContent = `${summary.cooldownSec}s • ~${summary.estimatedKcal} kcal`;
       document.getElementById('schedule-header-title').textContent =
-        `ตารางฝึกซ้อมทั้งหมด (${durationMinutes} นาที • ${state.schedule.steps.length} ช่วงเวลา)`;
+        `ตารางฝึกซ้อม (${durationMinutes} นาที • ${state.schedule.steps.length} ช่วงเวลา)`;
     }
 
     function renderStageUI() {
@@ -856,41 +795,42 @@
       const cur = steps[state.currentIndex] || steps[0];
       const nxt = steps[state.currentIndex + 1] || null;
 
+      videoEngine.setExerciseStep(cur, state.selectedEquipment);
       document.getElementById('stage-phase-badge').textContent = cur.roundLabel;
-      document.getElementById('stage-step-counter').textContent = `ลำดับที่ ${state.currentIndex + 1}/${steps.length}`;
+      document.getElementById('stage-step-counter').textContent = `${state.currentIndex + 1}/${steps.length}`;
       document.getElementById('stage-title-th').textContent = cur.nameTh;
       document.getElementById('stage-title-en').textContent = cur.nameEn;
-
-      const mediaImg = document.getElementById('stage-media-img');
-      if (mediaImg.src !== cur.mediaUrl) {
-        mediaImg.src = cur.mediaUrl;
-      }
 
       const muscleBadge = document.getElementById('stage-muscle-badge');
       muscleBadge.textContent = `🎯 ${cur.primaryMuscleTh}`;
       muscleBadge.style.backgroundColor = cur.primaryMuscleColor || '#f97316';
-
       document.getElementById('stage-form-cues').textContent = cur.formCues;
-      document.getElementById('stage-motion-label').textContent =
-        cur.type === 'SPRINT'
-          ? '⚡ Supramaximal All-Out Cadence (100% Effort)'
-          : cur.type === 'REST'
-          ? '🧊 Active Recovery & Deep Nasal Breathing'
-          : `⚡ Biomechanical Tempo (${state.modality}): Controlled Eccentric → Explosive Concentric`;
 
-      // AI Prompt Drawer text
+      // Render JEFIT EMG Bars
+      const emgBox = document.getElementById('emg-bars-container');
+      emgBox.innerHTML = '';
+      Object.entries(cur.emgActivation || {}).forEach(([mId, pct]) => {
+        const meta = MUSCLE_GROUPS.find(m => m.id === mId);
+        const div = document.createElement('div');
+        div.innerHTML = `<div class="flex justify-between text-[10px] font-semibold"><span class="text-zinc-300 truncate">${meta?.nameTh.split(' (')[0] || mId}</span><span class="font-mono text-orange-300">${pct}%</span></div><div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${pct}%;background:${meta?.color || '#f97316'}"></div></div>`;
+        emgBox.appendChild(div);
+      });
+
+      // Breath Pacer visibility
+      const bp = document.getElementById('breath-pacer-box');
+      if (state.modality === 'YOGA' || cur.type === 'REST' || cur.type === 'COOLDOWN') bp.classList.remove('hidden');
+      else bp.classList.add('hidden');
+
       document.getElementById('prompt-image-text').textContent = cur.aiPrompt.imagePrompt;
       document.getElementById('prompt-motion-text').textContent = cur.aiPrompt.motionLoopPrompt;
 
-      // Up Next Preview
       if (nxt) {
-        document.getElementById('up-next-img').src = nxt.mediaUrl;
         document.getElementById('up-next-title-th').textContent = nxt.nameTh;
         document.getElementById('up-next-title-en').textContent = nxt.nameEn;
         document.getElementById('up-next-dur').textContent = `${nxt.duration}s`;
       } else {
         document.getElementById('up-next-title-th').textContent = '🏁 ขั้นตอนสุดท้ายของโปรแกรม!';
-        document.getElementById('up-next-title-en').textContent = 'Workout Complete';
+        document.getElementById('up-next-title-en').textContent = 'Complete';
         document.getElementById('up-next-dur').textContent = 'DONE';
       }
 
@@ -900,121 +840,97 @@
     function updateTimerClocks() {
       const steps = state.schedule.steps;
       const cur = steps[state.currentIndex] || steps[0];
-
       const clockEl = document.getElementById('stage-clock');
       clockEl.textContent = formatClock(state.remainingSec);
-      if (state.remainingSec <= 3 && state.isRunning) {
-        clockEl.className = 'font-mono font-extrabold text-5xl sm:text-6xl my-3 tracking-tight text-red-500 scale-105 transition-transform';
-      } else if (cur.type === 'REST') {
-        clockEl.className = 'font-mono font-extrabold text-5xl sm:text-6xl my-3 tracking-tight text-cyan-400';
-      } else {
-        clockEl.className = 'font-mono font-extrabold text-5xl sm:text-6xl my-3 tracking-tight text-white';
-      }
+      clockEl.className = state.remainingSec <= 3 && state.isRunning
+        ? 'font-mono font-extrabold text-3xl tracking-tight text-red-500 scale-110 transition-transform'
+        : 'font-mono font-extrabold text-3xl tracking-tight text-white';
 
-      const stepPct = cur.duration ? ((cur.duration - state.remainingSec) / cur.duration) * 100 : 0;
-      document.getElementById('step-progress-bar').style.width = `${Math.min(100, stepPct)}%`;
+      const pct = cur.duration ? ((cur.duration - state.remainingSec) / cur.duration) * 100 : 0;
+      const circ = 326.73;
+      const ringEl = document.getElementById('ring-progress-circle');
+      ringEl.style.strokeDashoffset = circ * (1 - Math.min(100, pct) / 100);
+      ringEl.style.stroke = cur.type === 'REST' ? '#06b6d4' : state.modality === 'YOGA' ? '#10b981' : '#f97316';
 
       const elapsedTotal = cur.startTimeSec + (cur.duration - state.remainingSec);
       const remainTotal = Math.max(0, state.schedule.totalSeconds - elapsedTotal);
       document.getElementById('global-remaining-clock').textContent = formatClock(remainTotal);
+      document.getElementById('global-progress-bar').style.width = `${Math.min(100, (elapsedTotal / state.schedule.totalSeconds) * 100)}%`;
 
-      const globalPct = state.schedule.totalSeconds ? (elapsedTotal / state.schedule.totalSeconds) * 100 : 0;
-      document.getElementById('global-progress-bar').style.width = `${Math.min(100, globalPct)}%`;
+      // Daily Burn Simulated HR BPM
+      const modMeta = TRAINING_MODALITIES[state.modality] || TRAINING_MODALITIES.HIIT;
+      const [hMin, hMax] = modMeta.hrTargetBpm || [125, 165];
+      const bpm = cur.type === 'REST' || cur.type === 'COOLDOWN' ? Math.round(hMin * 0.88) : cur.type === 'SPRINT' ? hMax : Math.round(hMin + (hMax - hMin) * (pct / 100));
+      document.getElementById('live-bpm-display').textContent = `${bpm} BPM`;
     }
 
     function renderScheduleTimeline() {
       const listEl = document.getElementById('schedule-timeline-list');
       listEl.innerHTML = '';
-
       state.schedule.steps.forEach((step, idx) => {
         const isCurrent = idx === state.currentIndex;
         const isSwappable = step.type === 'WORK' || step.type === 'SPRINT';
-
         const row = document.createElement('div');
         row.className = `p-2.5 rounded-2xl border transition flex items-center justify-between gap-2 ${
-          isCurrent
-            ? 'bg-orange-500/15 border-orange-500 ring-1 ring-orange-500'
-            : step.type === 'REST'
-            ? 'bg-zinc-950/50 border-zinc-800/60'
-            : 'bg-zinc-950/90 border-zinc-800 hover:border-zinc-700'
+          isCurrent ? 'bg-orange-500/15 border-orange-500 ring-1 ring-orange-500' : step.type === 'REST' ? 'bg-zinc-950/50 border-zinc-800/60' : 'bg-zinc-950/90 border-zinc-800'
         }`;
 
         const leftBtn = document.createElement('button');
         leftBtn.type = 'button';
-        leftBtn.className = 'flex items-center gap-2.5 min-w-0 flex-1 text-left';
-        leftBtn.innerHTML = `
-          <span class="font-mono text-[11px] text-zinc-500 w-10 shrink-0">${formatClock(step.startTimeSec)}</span>
-          <div class="min-w-0">
-            <div class="flex items-center gap-1.5">
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-orange-300">${step.roundLabel}</span>
-              <span class="text-[10px] text-zinc-400 truncate">${step.primaryMuscleTh}</span>
-            </div>
-            <p class="text-xs font-bold text-zinc-100 truncate mt-0.5">${step.nameTh}</p>
-          </div>
-        `;
+        leftBtn.className = 'flex items-center gap-2 min-w-0 flex-1 text-left';
+        leftBtn.innerHTML = `<span class="font-mono text-[11px] text-zinc-500 w-10 shrink-0">${formatClock(step.startTimeSec)}</span><div class="min-w-0"><div class="flex items-center gap-1.5"><span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-orange-300">${step.roundLabel}</span><span class="text-[10px] text-zinc-400 truncate">${step.primaryMuscleTh.split(' (')[0]}</span></div><p class="text-xs font-bold text-zinc-100 truncate mt-0.5">${step.nameTh}</p></div>`;
         leftBtn.onclick = () => {
           state.currentIndex = idx;
           state.remainingSec = state.schedule.steps[idx].duration;
           accMs = 0;
-          preloader.preloadUpcomingSteps(state.schedule.steps, idx, 2);
           renderStageUI();
           renderScheduleTimeline();
           refresh3DMuscleColors();
         };
 
         const rightBox = document.createElement('div');
-        rightBox.className = 'flex items-center gap-1.5 shrink-0';
-
+        rightBox.className = 'flex items-center gap-1 shrink-0';
         if (isSwappable) {
-          const swapBtn = document.createElement('button');
-          swapBtn.type = 'button';
-          swapBtn.className = 'px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] font-semibold text-zinc-200 border border-zinc-700';
-          swapBtn.textContent = '🔀 สลับท่า';
-          swapBtn.onclick = e => {
+          const sBtn = document.createElement('button');
+          sBtn.type = 'button';
+          sBtn.className = 'px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] text-zinc-200 border border-zinc-700';
+          sBtn.textContent = '🔀';
+          sBtn.onclick = e => {
             e.stopPropagation();
             state.schedule = swapExerciseInSchedule(state.schedule, idx);
-            if (idx === state.currentIndex) {
-              state.remainingSec = state.schedule.steps[idx].duration;
-            }
+            if (idx === state.currentIndex) state.remainingSec = state.schedule.steps[idx].duration;
             renderStageUI();
             renderScheduleTimeline();
           };
-          rightBox.appendChild(swapBtn);
+          rightBox.appendChild(sBtn);
         }
-
-        const durSpan = document.createElement('span');
-        durSpan.className = 'font-mono text-xs font-bold px-2 py-1 rounded-lg bg-zinc-900 text-zinc-300 border border-zinc-800';
-        durSpan.textContent = `${step.duration}s`;
-        rightBox.appendChild(durSpan);
-
+        const dSpan = document.createElement('span');
+        dSpan.className = 'font-mono text-xs font-bold px-2 py-1 rounded-lg bg-zinc-900 text-zinc-300 border border-zinc-800';
+        dSpan.textContent = `${step.duration}s`;
+        rightBox.appendChild(dSpan);
         row.appendChild(leftBtn);
         row.appendChild(rightBox);
         listEl.appendChild(row);
       });
     }
 
-    // =========================================================================
-    // 5. SMART ALERTS (WEB AUDIO SYNTH, TTS, TOAST, BROWSER NOTIFICATIONS)
-    // =========================================================================
-    function playSynthBeep(freq = 880, durationMs = 140, type = 'sine', vol = 0.22) {
+    // Smart Alerts + Breath Pacer + Wake Lock
+    function playSynthBeep(freq = 880, dur = 140, type = 'sine', vol = 0.22) {
       if (!state.soundEnabled) return;
       try {
-        if (!audioCtx) {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          audioCtx = new AudioCtx();
-        }
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = type;
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
         gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + durationMs / 1000);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur / 1000);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
-        osc.stop(audioCtx.currentTime + durationMs / 1000);
-      } catch (e) {}
+        osc.stop(audioCtx.currentTime + dur / 1000);
+      } catch {}
     }
 
     function speakCoach(text) {
@@ -1023,27 +939,35 @@
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'th-TH';
-        u.rate = 1.05;
+        u.rate = state.modality === 'YOGA' ? 0.94 : 1.05;
         window.speechSynthesis.speak(u);
-      } catch (e) {}
+      } catch {}
+    }
+
+    function triggerVibrate(pat = [90]) {
+      if ('vibrate' in navigator) {
+        try { navigator.vibrate(pat); } catch {}
+      }
     }
 
     function showSmartToast(title, subtitle, isRest = false) {
       const toast = document.getElementById('smart-toast');
-      const box = document.getElementById('smart-toast-box');
       document.getElementById('smart-toast-icon').textContent = isRest ? '🧊' : '🔥';
       document.getElementById('smart-toast-title').textContent = title;
       document.getElementById('smart-toast-subtitle').textContent = subtitle;
-      box.className = `bg-zinc-900/95 backdrop-blur-md border-2 ${
-        isRest ? 'border-cyan-500' : 'border-orange-500'
-      } px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3`;
+      document.getElementById('smart-toast-box').className = `bg-zinc-900/95 backdrop-blur-md border-2 ${isRest ? 'border-cyan-500' : 'border-orange-500'} px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3`;
       toast.classList.remove('opacity-0', '-translate-y-4');
-      setTimeout(() => {
-        toast.classList.add('opacity-0', '-translate-y-4');
-      }, 3200);
+      setTimeout(() => toast.classList.add('opacity-0', '-translate-y-4'), 3200);
     }
 
-    // Timer Loop (High-precision drift-free)
+    setInterval(() => {
+      breathTick = (breathTick + 1) % 12;
+      const bpLabel = document.getElementById('breath-pacer-label');
+      if (breathTick < 4) bpLabel.textContent = 'สูดหายใจเข้าลึก (Inhale 4s)';
+      else if (breathTick < 6) bpLabel.textContent = 'กลั้นลมหายใจ (Hold 2s)';
+      else bpLabel.textContent = 'ผ่อนลมหายใจออกยาว (Exhale 6s)';
+    }, 1000);
+
     setInterval(() => {
       if (!state.isRunning || !state.schedule) return;
       const now = performance.now();
@@ -1057,63 +981,70 @@
 
         if (state.remainingSec - ticks > 0) {
           state.remainingSec -= ticks;
-
-          // Zero-Latency Preload 5 seconds before transition
           const nextStep = state.schedule.steps[state.currentIndex + 1];
           const badge = document.getElementById('preload-status-badge');
           if (state.remainingSec === 5 && nextStep) {
             badge.classList.remove('hidden');
+            videoEngine.prewarmStep(nextStep);
             preloader.preloadUrl(nextStep.mediaUrl);
             speakCoach(`อีก 5 วินาที เตรียมท่า ${nextStep.nameTh}`);
           } else if (state.remainingSec > 5) {
             badge.classList.add('hidden');
           }
-
           if (state.remainingSec <= 3 && state.remainingSec >= 1) {
-            playSynthBeep(880, 120, 'triangle', 0.25);
+            playSynthBeep(state.modality === 'YOGA' ? 528 : 880, 120, 'triangle', 0.24);
+            triggerVibrate([55]);
           }
           updateTimerClocks();
         } else {
-          // Advance to Next Step
           document.getElementById('preload-status-badge').classList.add('hidden');
           if (state.currentIndex + 1 < state.schedule.steps.length) {
             state.currentIndex++;
             const nextStep = state.schedule.steps[state.currentIndex];
             state.remainingSec = nextStep.duration;
-            preloader.preloadUpcomingSteps(state.schedule.steps, state.currentIndex, 2);
-
+            videoEngine.prewarmStep(state.schedule.steps[state.currentIndex + 1]);
             const isRest = nextStep.type === 'REST' || nextStep.type === 'COOLDOWN';
-            playSynthBeep(isRest ? 523.25 : 1174.66, 300, isRest ? 'sine' : 'sawtooth', 0.28);
-            showSmartToast(isRest ? 'ช่วงพักฟื้นตัว (Recovery)' : 'เริ่มท่าต่อไป!', nextStep.nameTh, isRest);
+            playSynthBeep(isRest ? 523.25 : 1174.66, 280, isRest ? 'sine' : 'sawtooth', 0.28);
+            triggerVibrate([120, 60, 120]);
+            showSmartToast(isRest ? 'ช่วงพักฟื้นตัว' : 'เริ่มท่าต่อไป!', nextStep.nameTh, isRest);
             speakCoach(nextStep.nameTh);
-
             if (state.notifyEnabled && 'Notification' in window && Notification.permission === 'granted') {
               new Notification(nextStep.nameTh, { body: nextStep.formCues });
             }
-
             renderStageUI();
             renderScheduleTimeline();
             refresh3DMuscleColors();
           } else {
             state.isRunning = false;
             state.remainingSec = 0;
-            document.getElementById('btn-play-pause').textContent = '▶ เริ่มจับเวลาฝึก';
+            document.getElementById('btn-play-pause').textContent = '▶ เริ่มฝึก';
             playSynthBeep(1046.5, 500, 'triangle', 0.3);
-            showSmartToast('🎉 จบโปรแกรมสมบูรณ์!', 'คุณออกกำลังกายครบตามเวลาเป้าหมายแล้ว', false);
+            triggerVibrate([200, 100, 200]);
+            state.stats = logCompletedWorkoutSession(state.schedule);
+            document.getElementById('stats-summary-pill').textContent =
+              `${state.stats.totalSessions} เซสชัน • ${state.stats.totalKcal} kcal`;
+            showSmartToast('🎉 จบโปรแกรมสมบูรณ์!', 'บันทึกสถิติ JEFIT และอัปเดตกล้ามเนื้อเรียบร้อย', false);
             speakCoach('ยินดีด้วยครับ คุณออกกำลังกายครบตามเวลาเป้าหมายแล้ว');
+            renderConfigControls();
             updateTimerClocks();
+            refresh3DMuscleColors();
           }
         }
       }
     }, 100);
 
-    // Button Bindings
-    document.getElementById('btn-play-pause').addEventListener('click', () => {
+    // Controls Bindings
+    document.getElementById('btn-play-pause').addEventListener('click', async () => {
       state.isRunning = !state.isRunning;
       lastTickMs = performance.now();
-      document.getElementById('btn-play-pause').textContent = state.isRunning ? '⏸ หยุดชั่วคราว' : '▶ เริ่มจับเวลาฝึก';
+      document.getElementById('btn-play-pause').textContent = state.isRunning ? '⏸ หยุด' : '▶ เริ่มฝึก';
       if (state.isRunning) {
-        playSynthBeep(1046.5, 180, 'sine', 0.2);
+        playSynthBeep(1046.5, 160, 'sine', 0.2);
+        if ('wakeLock' in navigator && !wakeLock) {
+          try { wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+        }
+      } else if (wakeLock) {
+        try { await wakeLock.release(); wakeLock = null; } catch {}
       }
       refresh3DMuscleColors();
     });
@@ -1123,38 +1054,46 @@
         state.currentIndex--;
         state.remainingSec = state.schedule.steps[state.currentIndex].duration;
         accMs = 0;
-        renderStageUI();
-        renderScheduleTimeline();
-        refresh3DMuscleColors();
+        renderStageUI(); renderScheduleTimeline(); refresh3DMuscleColors();
       }
     });
-
     document.getElementById('btn-next-step').addEventListener('click', () => {
       if (state.currentIndex + 1 < state.schedule.steps.length) {
         state.currentIndex++;
         state.remainingSec = state.schedule.steps[state.currentIndex].duration;
         accMs = 0;
-        renderStageUI();
-        renderScheduleTimeline();
-        refresh3DMuscleColors();
+        renderStageUI(); renderScheduleTimeline(); refresh3DMuscleColors();
       }
+    });
+
+    document.querySelectorAll('.vspeed-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        videoEngine.setPlaybackRate(btn.dataset.speed);
+        document.querySelectorAll('.vspeed-btn').forEach(b => { b.className = 'vspeed-btn px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300'; });
+        btn.className = 'vspeed-btn px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold bg-orange-500 text-white';
+      });
+    });
+
+    document.querySelectorAll('.vangle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        videoEngine.setCameraAngle(btn.dataset.angle);
+        document.querySelectorAll('.vangle-btn').forEach(b => { b.className = 'vangle-btn px-2 py-0.5 rounded-lg text-[10px] font-bold bg-zinc-800 text-zinc-300'; });
+        btn.className = 'vangle-btn px-2 py-0.5 rounded-lg text-[10px] font-bold bg-cyan-500 text-zinc-950';
+      });
     });
 
     document.getElementById('btn-sound').addEventListener('click', e => {
       state.soundEnabled = !state.soundEnabled;
-      e.currentTarget.textContent = state.soundEnabled ? '🔔 เสียงบี๊ป: เปิด' : '🔕 เสียงบี๊ป: ปิด';
+      e.currentTarget.textContent = state.soundEnabled ? '🔔' : '🔕';
     });
-
     document.getElementById('btn-voice').addEventListener('click', e => {
       state.voiceEnabled = !state.voiceEnabled;
-      e.currentTarget.textContent = state.voiceEnabled ? '🗣️ เสียงพากย์: เปิด' : '🔇 เสียงพากย์: ปิด';
+      e.currentTarget.textContent = state.voiceEnabled ? '🗣️' : '🔇';
     });
-
-    document.getElementById('btn-notify').addEventListener('click', async e => {
+    document.getElementById('btn-notify').addEventListener('click', async () => {
       if ('Notification' in window) {
         const perm = await Notification.requestPermission();
         state.notifyEnabled = perm === 'granted';
-        e.currentTarget.textContent = state.notifyEnabled ? '📲 แจ้งเตือน: เปิดแล้ว' : '📲 แจ้งเตือนเบราว์เซอร์';
       }
     });
 
@@ -1165,7 +1104,17 @@
       document.getElementById('ai-prompt-drawer').classList.add('hidden');
     });
 
-    // Boot Application
+    // Mobile Bottom Navigation Smooth Jump
+    document.querySelectorAll('.mnav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mnav-btn').forEach(b => { b.className = 'mnav-btn flex flex-col items-center py-1 rounded-xl text-zinc-400'; });
+        btn.className = 'mnav-btn flex flex-col items-center py-1 rounded-xl text-orange-400 bg-orange-500/10';
+        const target = document.getElementById(btn.dataset.mnav);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Boot
     rebuildScheduleAndRender();
   </script>
 </body>

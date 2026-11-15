@@ -1,0 +1,113 @@
+# KINETIC MED-FIT 3D (v2.0)
+
+> **Medical-Grade Interactive 3D Muscle Anatomy, Looping Biomechanical Workout Videos & Multi-Modality Exercise Physiology Studio (PWA / Android Play Store Ready)**
+
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Chaibancha%2FYuenNanNan-orange?logo=github)](https://github.com/Chaibancha/YuenNanNan)
+[![Tech Stack](https://img.shields.io/badge/Stack-Three.js%20%7C%20React%20%7C%20Tailwind%20%7C%20WebGL-06b6d4)](#)
+[![Mobile Ready](https://img.shields.io/badge/Android%20%2F%20Play%20Store-PWA%20%2B%20Capacitor%20%2B%20TWA-10b981)](#google-play-store-packaging-guide)
+
+---
+
+## Core Capabilities & Architecture
+
+### 1. Medical-Grade Ecorché 3D Muscle Fiber Selector (`src/Body3DAnatomy.js` & `src/Body3DSelector.jsx`)
+- **Procedural Striated Myofibril Textures & Bump Maps:** Renders striated muscle fibers and pearl-white tendon/aponeurosis insertions on an internal anatomical skeletal core (cranium, cervical/thoracic/lumbar spine, ribcage, sternum, clavicles, pelvis, and limb bones).
+- **16 Detailed Bilateral Muscle Groups:**
+  1. `neck_scm` — Sternocleidomastoid & Splenius Capitis
+  2. `shoulders_anterior_lateral` — Anterior & Lateral Deltoids
+  3. `shoulders_posterior_traps` — Posterior Deltoid & Upper/Mid Trapezius
+  4. `chest_upper_Mid` — Pectoralis Major (Clavicular & Sternal Heads)
+  5. `serratus_obliques` — Serratus Anterior & External/Internal Obliques
+  6. `abs_rectus` — Rectus Abdominis (8-pack segments) & Linea Alba
+  7. `lats_teres` — Latissimus Dorsi & Teres Major
+  8. `rhomboids_erector` — Rhomboids & Erector Spinae
+  9. `biceps_brachialis` — Biceps Brachii & Brachialis
+  10. `triceps` — Triceps Brachii (Long, Lateral & Medial Heads)
+  11. `forearms` — Brachioradialis, Wrist Flexors & Extensors
+  12. `glutes` — Gluteus Maximus & Gluteus Medius
+  13. `hip_adductors` — Iliopsoas, TFL & Adductors
+  14. `quads` — Quadriceps Femoris (Rectus Femoris, Vastus Lateralis/Medialis)
+  15. `hamstrings` — Biceps Femoris & Semitendinosus
+  16. `calves_tibialis` — Gastrocnemius, Soleus & Tibialis Anterior
+- **3 Medical Visualization Modes:**
+  - `🧬 Ecorché Fiber`: High-contrast medical striated muscle tissue
+  - `🦴 X-Ray Skeletal`: Translucent fascia/muscle revealing spine, ribcage & joints
+  - `🔥 EMG & Recovery Heatmap`: Live muscle fatigue & recovery status map
+
+### 2. Real-Time Looping Workout Video Engine (`src/ExerciseVideoEngine.js`)
+- Generates smooth looping `<video autoplay loop muted playsinline>` streams via `canvas.captureStream()` for **every exercise and all 11 equipment types**:
+  - Bodyweight, Dumbbells, Kettlebell, Resistance Band, Pull-up Bar, Barbell, Jump Rope, Adjustable Bench, Indoor Bike, Yoga Mat, Yoga Block.
+- Interactive video controls: **0.5x Slow-Mo / 1.0x / 1.5x** playback speeds and **Side / Front** camera angles, plus **5-second pre-warming** before step transitions.
+
+### 3. Science-Based Modalities & Inspired Top-App Features (`src/WorkoutEngine.js`)
+- **Training Modalities:**
+  - **HIIT:** Zone 4–5 (`35:25`, `40:20`, `45:15`)
+  - **REHIT (Vollaard Protocol):** Supramaximal `15–20s` All-Out Sprints + `100–135s` Active Recovery
+  - **CARDIO (PHA Circuit):** Zone 2–3 steady-state upper/lower alternation (`45:15`, `50:10`, `55:5`)
+  - **YOGA (Yoga Studio inspired):** Vinyasa, Power Yoga & Yin stretches with **Pranayama Breath Pacer** (`4s Inhale : 2s Hold : 6s Exhale`)
+  - **7-Minute Scientific Circuit (7 Minute Workout inspired):** Instant ACSM-style circuit with SVG circular countdown ring & Haptic Vibration (`navigator.vibrate`)
+- **Sworkit Features:** Exact time-bounded scheduling (`7, 10, 15, 20, 30, 45 min`), one-tap **Swap Exercise**, and **Low-Impact / Joint-Friendly** filter.
+- **JEFIT Features:** Per-exercise **EMG Muscle Activation %** bars and **LocalStorage Muscle Recovery %** tracking.
+- **Daily Burn Features:** Live simulated **Heart Rate (BPM)** & burn rate (`kcal/min`) telemetry bar.
+
+---
+
+## Project Structure
+
+```text
+YuenNanNan/
+├── Index.html                  # Standalone Browser & Mobile PWA Entry
+├── manifest.json               # Web App Manifest (Play Store TWA ready)
+├── sw.js                       # Offline Service Worker
+├── capacitor.config.json       # Capacitor Android Build Configuration
+├── package.json                # React + Vite + Three.js Dependencies
+├── Explode30_Original.html     # Original v0 prototype backup
+└── src/
+    ├── App.jsx                 # React Main Orchestrator & Mobile Navigation
+    ├── Body3DAnatomy.js        # Shared Medical Skeletal & 16-Muscle 3D Builder
+    ├── Body3DSelector.jsx      # React Three.js Interactive 3D Selector
+    ├── ExerciseVideoEngine.js  # Looping Biomechanical Video Stream Engine
+    ├── WorkoutEngine.js        # Physiology Engine, 16-Muscle DB & Scheduling
+    └── WorkoutPlayer.jsx       # Live Video Player, Breath Pacer & Smart Alerts
+```
+
+---
+
+## Running Locally
+
+### Option 1: Instant Zero-Build Web / Mobile Server
+```bash
+npx serve .
+```
+Open `http://localhost:3000/Index.html`.
+
+### Option 2: Vite + React Development Server
+```bash
+npm install
+npm run dev
+```
+
+---
+
+## Google Play Store Packaging Guide (Android)
+
+This app supports **Screen Wake Lock API**, **Haptic Vibration**, **Offline Service Worker (`sw.js`)**, and **Mobile-First Bottom Navigation** for deployment to Google Play Store via two standard approaches:
+
+### Method A: Capacitor Native Android Wrapper (`.aab` / `.apk`)
+```bash
+npm install @capacitor/core @capacitor/cli @capacitor/android
+npm run build
+npx cap add android
+npx cap sync android
+npx cap open android
+```
+Build the signed **Android App Bundle (`.aab`)** inside Android Studio (`Build -> Generate Signed Bundle / APK`).
+
+### Method B: Trusted Web Activity (TWA) via Bubblewrap
+1. Deploy `Index.html`, `manifest.json`, `sw.js`, and `src/` to HTTPS (e.g., GitHub Pages or Vercel).
+2. Run Bubblewrap CLI:
+   ```bash
+   npx @bubblewrap/cli init --manifest https://<your-domain>/manifest.json
+   npx @bubblewrap/cli build
+   ```
+3. Upload the generated `.aab` to the **Google Play Console**.
