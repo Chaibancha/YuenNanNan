@@ -23,6 +23,8 @@ export class BiomechanicalVideoLoopEngine {
     this.videoEl = null;
     this.fallbackCanvasEl = null;
     this.prewarmedSteps = new Map();
+    this.onTempoBeat = null;
+    this.lastTempoHalf = null;
 
     // Offscreen Canvas สำหรับสตรีมเป็น <video> Real-time
     this.canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
@@ -31,6 +33,37 @@ export class BiomechanicalVideoLoopEngine {
       this.canvas.height = this.height;
       this.ctx = this.canvas.getContext('2d');
     }
+  }
+
+  safeRoundRect(ctx, x, y, w, h, r) {
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x, y, w, h, r);
+      return;
+    }
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+    ctx.lineTo(x + w, y + h - radius);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    ctx.lineTo(x + radius, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+
+  activateFallbackCanvas() {
+    if (this.videoEl) {
+      this.videoEl.classList.add('hidden');
+    }
+    if (this.fallbackCanvasEl) {
+      this.fallbackCanvasEl.classList.remove('hidden');
+    }
+  }
+
+  setTempoCallback(fn) {
+    this.onTempoBeat = typeof fn === 'function' ? fn : null;
   }
 
   attachToVideo(videoElement, fallbackCanvas = null) {
@@ -48,13 +81,17 @@ export class BiomechanicalVideoLoopEngine {
         videoElement.muted = true;
         videoElement.loop = true;
         videoElement.playsInline = true;
+        videoElement.classList.remove('hidden');
+        fallbackCanvas?.classList.add('hidden');
         const p = videoElement.play();
         if (p && typeof p.catch === 'function') {
-          p.catch(() => {});
+          p.catch(() => this.activateFallbackCanvas());
         }
       } catch {
-        // Fallback to direct canvas render if captureStream restricted
+        this.activateFallbackCanvas();
       }
+    } else {
+      this.activateFallbackCanvas();
     }
     this.startLoop();
   }
@@ -124,6 +161,12 @@ export class BiomechanicalVideoLoopEngine {
     const wave = 0.5 - 0.5 * Math.cos(cyclePhase * Math.PI * 2); // 0 -> 1 -> 0 smooth easing
     const signedWave = Math.sin(cyclePhase * Math.PI * 2); // -1..1
 
+    const tempoHalf = cyclePhase < 0.5 ? 'eccentric' : 'concentric';
+    if (this.lastTempoHalf !== null && tempoHalf !== this.lastTempoHalf) {
+      this.onTempoBeat?.(tempoHalf);
+    }
+    this.lastTempoHalf = tempoHalf;
+
     const primaryColor = step?.primaryMuscleColor || '#f97316';
     const isRest = step?.type === 'REST' || step?.type === 'COOLDOWN';
 
@@ -189,7 +232,7 @@ export class BiomechanicalVideoLoopEngine {
     if (equip === 'yoga_mat' || equip === 'yoga_block') {
       ctx.fillStyle = '#4f46e5';
       ctx.beginPath();
-      ctx.roundRect(cx - 145, floorY - 6, 290, 8, 4);
+      this.safeRoundRect(ctx, cx - 145, floorY - 6, 290, 8, 4);
       ctx.fill();
       if (equip === 'yoga_block') {
         ctx.fillStyle = '#d97706';
@@ -681,7 +724,7 @@ export class BiomechanicalVideoLoopEngine {
     // Top-left Live Motion Loop indicator
     ctx.fillStyle = 'rgba(9, 9, 11, 0.78)';
     ctx.beginPath();
-    ctx.roundRect(14, 14, 218, 28, 8);
+    this.safeRoundRect(ctx, 14, 14, 218, 28, 8);
     ctx.fill();
 
     ctx.beginPath();
@@ -696,20 +739,20 @@ export class BiomechanicalVideoLoopEngine {
     // Contraction Phase Bar (Top-right)
     ctx.fillStyle = 'rgba(9, 9, 11, 0.78)';
     ctx.beginPath();
-    ctx.roundRect(W - 156, 14, 142, 28, 8);
+    this.safeRoundRect(ctx, W - 156, 14, 142, 28, 8);
     ctx.fill();
 
     ctx.fillStyle = '#a1a1aa';
     ctx.font = 'bold 10px sans-serif';
     ctx.fillText(wave > 0.55 ? 'CONCENTRIC (ออกแรง)' : 'ECCENTRIC (ควบคุม)', W - 146, 31);
 
-    // Equipment badge
-    ctx.fillStyle = 'rgba(249, 115, 22, 0.2)';
+    // Equipment badge placed cleanly below top-right HUD so bottom controls are never occluded
+    ctx.fillStyle = 'rgba(249, 115, 22, 0.22)';
     ctx.beginPath();
-    ctx.roundRect(14, H - 38, 178, 24, 6);
+    this.safeRoundRect(ctx, W - 156, 48, 142, 24, 6);
     ctx.fill();
     ctx.fillStyle = '#fb923c';
     ctx.font = 'bold 11px sans-serif';
-    ctx.fillText(`PROP: ${activeEquip.toUpperCase()}`, 24, H - 22);
+    ctx.fillText(`PROP: ${activeEquip.toUpperCase()}`, W - 146, 64);
   }
 }

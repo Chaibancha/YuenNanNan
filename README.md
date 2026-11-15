@@ -57,35 +57,42 @@
 
 ```text
 YuenNanNan/
-├── Index.html                  # Standalone Browser & Mobile PWA Entry
+├── Index.html                  # Unified Vite HTML Entry Point (<div id="root">)
 ├── manifest.json               # Web App Manifest (Play Store TWA ready)
-├── sw.js                       # Offline Service Worker
+├── sw.js                       # Offline-First Service Worker (v3, Stale-While-Revalidate + Media Cache)
+├── vite.config.js              # Vite React Build + PWA Copy Plugin
+├── tailwind.config.js          # Bundled Tailwind CSS + Thai System Font Fallback
+├── postcss.config.js           # PostCSS Pipeline
 ├── capacitor.config.json       # Capacitor Android Build Configuration
 ├── package.json                # React + Vite + Three.js Dependencies
+├── PRD.md / CR.md / BACKLOG.md # Engineering Specs & Sprint Roadmap
 ├── Explode30_Original.html     # Original v0 prototype backup
 └── src/
-    ├── App.jsx                 # React Main Orchestrator & Mobile Navigation
+    ├── main.jsx                # React Root Mount & Service Worker Registration
+    ├── index.css               # Bundled Tailwind Directives & Dark Studio Theme
+    ├── App.jsx                 # React Main Orchestrator, Goal Presets, Profile, Guard & Streak
     ├── Body3DAnatomy.js        # BioDigital HumanAPI Bridge, MSD Mapping & Ecorché Builder
-    ├── Body3DSelector.jsx      # Dual-Engine BioDigital + Three.js Dissect/Isolate Selector
-    ├── ExerciseVideoEngine.js  # Looping Biomechanical Video Stream Engine
-    ├── WorkoutEngine.js        # Physiology Engine, 16-Muscle DB & Scheduling
-    └── WorkoutPlayer.jsx       # Live Video Player, Breath Pacer & Smart Alerts
+    ├── Body3DSelector.jsx      # Dual-Engine BioDigital + Three.js Dissect/Isolate/Lock Selector
+    ├── ExerciseVideoEngine.js  # Looping Biomechanical Video Stream Engine + Safe Canvas Fallback
+    ├── WorkoutEngine.js        # Physiology Engine, Joint Filter, Phase METs, Presets & Recovery
+    └── WorkoutPlayer.jsx       # Focus Mode Player, BLE HR, Metronome, Breath Pacer & 9:16 Share Card
 ```
 
 ---
 
 ## Running Locally
 
-### Option 1: Instant Zero-Build Web / Mobile Server
-```bash
-npx serve .
-```
-Open `http://localhost:3000/Index.html`.
-
-### Option 2: Vite + React Development Server
+### Option 1: Development Server (Vite + React + Bundled Tailwind/Three.js)
 ```bash
 npm install
 npm run dev
+```
+
+### Option 2: Production Offline-Ready Build & Preview
+```bash
+npm install
+npm run build
+npm run preview
 ```
 
 ---

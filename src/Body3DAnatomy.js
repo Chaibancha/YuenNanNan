@@ -389,8 +389,8 @@ export function buildMedicalAnatomyGroup() {
     // Cranial Temporalis & Masseter + Neck SCM & Splenius
     addMuscleFiber('neck_scm', sphereGeo, [side * 0.145, 2.35, 0.03], [0.04, 0.085, 0.085], [0, 0, 0], 'Temporalis');
     addMuscleFiber('neck_scm', sphereGeo, [side * 0.115, 2.21, 0.08], [0.038, 0.06, 0.05], [0, 0, side * 0.15], 'Masseter');
-    addMuscleFiber('neck_scm', capsuleGeo, [side * 0.07, 2.04, 0.06], [0.036, 0.11, 0.036], [0.22, 0, side * 0.22], 'Sternocleidomastoid');
-    addMuscleFiber('neck_scm', capsuleGeo, [side * 0.06, 2.04, -0.07], [0.042, 0.11, 0.042], [-0.15, 0, side * 0.12], 'Splenius Capitis');
+    addMuscleFiber('neck_scm', capsuleGeo, [side * 0.07, 2.04, 0.06], [0.048, 0.125, 0.048], [0.22, 0, side * 0.22], 'Sternocleidomastoid');
+    addMuscleFiber('neck_scm', capsuleGeo, [side * 0.06, 2.04, -0.07], [0.048, 0.125, 0.048], [-0.15, 0, side * 0.12], 'Splenius Capitis');
 
     // 2. Anterior & Lateral Deltoids
     addMuscleFiber('shoulders_anterior_lateral', sphereGeo, [side * 0.48, 1.76, 0.08], [0.13, 0.15, 0.12], [0, 0, side * -0.22], 'Anterior Deltoid');
@@ -425,8 +425,8 @@ export function buildMedicalAnatomyGroup() {
     addMuscleFiber('triceps', sphereGeo, [side * 0.62, 1.48, -0.06], [0.06, 0.14, 0.065], [0, 0, 0], 'Triceps Lateral Head');
 
     // 11. Forearms (Brachioradialis & Flexors/Extensors)
-    addMuscleFiber('forearms', capsuleGeo, [side * 0.65, 1.02, 0.05], [0.064, 0.18, 0.064], [0, 0, side * 0.06], 'Brachioradialis');
-    addMuscleFiber('forearms', capsuleGeo, [side * 0.67, 1.0, -0.01], [0.056, 0.17, 0.056], [0, 0, side * 0.06], 'Extensor Carpi');
+    addMuscleFiber('forearms', capsuleGeo, [side * 0.65, 1.02, 0.05], [0.076, 0.19, 0.076], [0, 0, side * 0.06], 'Brachioradialis');
+    addMuscleFiber('forearms', capsuleGeo, [side * 0.67, 1.0, -0.01], [0.068, 0.18, 0.068], [0, 0, side * 0.06], 'Extensor Carpi');
 
     // 12. Gluteus Maximus & Medius
     addMuscleFiber('glutes', sphereGeo, [side * 0.17, 0.64, -0.18], [0.17, 0.18, 0.14], [0, 0, 0], 'Gluteus Maximus');

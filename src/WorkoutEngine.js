@@ -1,10 +1,9 @@
 /**
  * ============================================================================
- * WorkoutEngine.js (v2.0 — Medical-Grade 16 Muscle Anatomy & Multi-Modality Engine)
+ * WorkoutEngine.js (v2.1 — Medical-Grade 16 Muscle Anatomy & Multi-Modality Engine)
  * ระบบฐานข้อมูลท่าออกกำลังกายทางการแพทย์ 16 มัดกล้ามเนื้อ 11 อุปกรณ์
  * อัลกอริทึมจัดตารางฝึก HIIT / REHIT / Cardio / Yoga / 7-Minute Scientific Circuit
- * พร้อม EMG Muscle Activation %, JEFIT Recovery Status, Sworkit Low-Impact Filter
- * และข้อมูล Kinematics สำหรับเรนเดอร์วิดีโอวนลูปครบทุกท่า
+ * พร้อม Joint Safety Filter, Phase-MET Calories, Goal Presets, Recovery Auto-Pick & Streak
  * ============================================================================
  */
 
@@ -855,6 +854,230 @@ export const EXERCISE_DATABASE = [
   }
 ];
 
+const POSE_JOINT_LOAD_MAP = {
+  squat: ['knee'],
+  jump_squat: ['knee'],
+  thruster: ['knee', 'shoulder'],
+  jump_rope: ['knee'],
+  pushup: ['wrist', 'shoulder'],
+  pike_pushup: ['wrist', 'shoulder'],
+  mountain_climber: ['wrist', 'shoulder'],
+  tricep_dip: ['wrist', 'shoulder'],
+  bench_press: ['shoulder', 'wrist'],
+  yoga_downward_dog: ['wrist', 'shoulder'],
+  overhead_press: ['shoulder'],
+  pullup: ['shoulder'],
+  kettlebell_swing: ['lower_back', 'shoulder'],
+  rdl_hinge: ['lower_back'],
+  bent_row: ['lower_back'],
+  russian_twist: ['lower_back'],
+  yoga_cobra: ['lower_back']
+};
+
+export const JOINT_STRESS_OPTIONS = [
+  { id: 'knee', labelTh: 'ข้อเข่า (Knee)', icon: '🦵' },
+  { id: 'wrist', labelTh: 'ข้อมือ (Wrist)', icon: '✋' },
+  { id: 'lower_back', labelTh: 'หลังล่าง (Lower Back)', icon: '🧘' },
+  { id: 'shoulder', labelTh: 'หัวไหล่ (Shoulder)', icon: '💪' }
+];
+
+/**
+ * อนุมานแรงกดทับข้อต่อของแต่ละท่าฝึก (ใช้กรองความปลอดภัยตามโปรไฟล์อาการบาดเจ็บ)
+ */
+export function inferJointLoad(exercise) {
+  if (!exercise) return [];
+  if (Array.isArray(exercise.jointLoad)) return [...exercise.jointLoad];
+
+  const poseType = exercise.videoKinematics?.poseType || '';
+  const stressSet = new Set(POSE_JOINT_LOAD_MAP[poseType] || []);
+
+  if (!exercise.lowImpact && ['quads', 'calves_tibialis'].includes(exercise.primaryMuscle)) {
+    stressSet.add('knee');
+  }
+  if (!exercise.lowImpact && ['chest_upper_Mid', 'shoulders_anterior_lateral'].includes(exercise.primaryMuscle)) {
+    stressSet.add('shoulder');
+  }
+  return [...stressSet];
+}
+
+EXERCISE_DATABASE.forEach(ex => {
+  ex.jointLoad = inferJointLoad(ex);
+});
+
+export const GOAL_PRESETS = [
+  {
+    id: 'fat_burn_15',
+    titleTh: '🔥 รีดไขมันเร่งด่วน (15 นาที)',
+    subtitleTh: 'เผาผลาญทั่วร่าง Zone 4-5 เหมาะกับวันที่เวลาน้อย',
+    isFullBody: true,
+    selectedMuscles: MUSCLE_GROUPS.map(m => m.id),
+    modality: 'HIIT',
+    durationMinutes: 15,
+    lowImpactOnly: false,
+    accentClass: 'border-orange-500/45 from-orange-500/15'
+  },
+  {
+    id: 'office_syndrome_10',
+    titleTh: '💻 แก้ปวดคอ-บ่า-ไหล่ ออฟฟิศซินโดรม (10 นาที)',
+    subtitleTh: 'คลายตึงกล้ามเนื้อคอ บ่า หลังบน พร้อมนำหายใจลดเครียด',
+    isFullBody: false,
+    selectedMuscles: ['neck_scm', 'shoulders_posterior_traps', 'rhomboids_erector'],
+    modality: 'YOGA',
+    durationMinutes: 10,
+    lowImpactOnly: true,
+    accentClass: 'border-emerald-500/45 from-emerald-500/15'
+  },
+  {
+    id: 'glutes_legs_safe_20',
+    titleTh: '🍑 ปั้นก้น & ขาเรียว ถนอมข้อเข่า (20 นาที)',
+    subtitleTh: 'กระชับสะโพกและเรียวขาแบบไร้แรงกระแทก (Low-Impact)',
+    isFullBody: false,
+    selectedMuscles: ['glutes', 'hamstrings', 'quads', 'hip_adductors'],
+    modality: 'CARDIO',
+    durationMinutes: 20,
+    lowImpactOnly: true,
+    accentClass: 'border-cyan-500/45 from-cyan-500/15'
+  },
+  {
+    id: 'upper_body_strength_20',
+    titleTh: '💪 เวทสร้างกล้ามท่อนบนที่บ้าน (20 นาที)',
+    subtitleTh: 'โฟกัสอก หลัง หัวไหล่ หน้าแขน หลังแขน กระชับชัด',
+    isFullBody: false,
+    selectedMuscles: ['chest_upper_Mid', 'lats_teres', 'shoulders_anterior_lateral', 'biceps_brachialis', 'triceps'],
+    modality: 'HIIT',
+    durationMinutes: 20,
+    lowImpactOnly: false,
+    accentClass: 'border-amber-500/45 from-amber-500/15'
+  }
+];
+
+export const SEVEN_DAY_CHALLENGE = [
+  {
+    day: 1,
+    titleTh: 'วันที่ 1: ปลุกกล้ามเนื้อทั่วร่างและแกนกลาง',
+    subtitleTh: '10 นาที • กระตุ้นระบบไหลเวียนเลือดแบบ 7-Min + แกนกลาง',
+    isFullBody: false,
+    selectedMuscles: ['chest_upper_Mid', 'abs_rectus', 'quads'],
+    modality: 'HIIT',
+    durationMinutes: 10,
+    lowImpactOnly: true
+  },
+  {
+    day: 2,
+    titleTh: 'วันที่ 2: แก้ออฟฟิศซินโดรม คอ-บ่า-ไหล่-หลัง',
+    subtitleTh: '10 นาที • คลายพังผืดหลังส่วนบนและคอ + Pranayama',
+    isFullBody: false,
+    selectedMuscles: ['neck_scm', 'shoulders_posterior_traps', 'rhomboids_erector'],
+    modality: 'YOGA',
+    durationMinutes: 10,
+    lowImpactOnly: true
+  },
+  {
+    day: 3,
+    titleTh: 'วันที่ 3: ขาแกร่ง สะโพกกระชับ',
+    subtitleTh: '15 นาที • ฝึกช่วงล่างสมดุลซ้าย-ขวา (Low-Impact)',
+    isFullBody: false,
+    selectedMuscles: ['glutes', 'hamstrings', 'quads', 'calves_tibialis'],
+    modality: 'CARDIO',
+    durationMinutes: 15,
+    lowImpactOnly: true
+  },
+  {
+    day: 4,
+    titleTh: 'วันที่ 4: โฟกัสอก หลัง และแขนกระชับ',
+    subtitleTh: '15 นาที • PHA Upper Body สลับผลักและดึง',
+    isFullBody: false,
+    selectedMuscles: ['chest_upper_Mid', 'lats_teres', 'biceps_brachialis', 'triceps'],
+    modality: 'HIIT',
+    durationMinutes: 15,
+    lowImpactOnly: false
+  },
+  {
+    day: 5,
+    titleTh: 'วันที่ 5: ฟื้นฟูพังผืดและยืดเหยียดทั่วร่าง',
+    subtitleTh: '15 นาที • Yoga Flow เติมออกซิเจนและปรับสมดุลข้อต่อ',
+    isFullBody: true,
+    selectedMuscles: MUSCLE_GROUPS.map(m => m.id),
+    modality: 'YOGA',
+    durationMinutes: 15,
+    lowImpactOnly: true
+  },
+  {
+    day: 6,
+    titleTh: 'วันที่ 6: REHIT เร่งความฟิตหัวใจและVO2max',
+    subtitleTh: '15 นาที • สปรินต์ระยะสั้นสลับฟื้นตัวแบบวิทยาศาสตร์',
+    isFullBody: false,
+    selectedMuscles: ['quads', 'glutes', 'abs_rectus', 'serratus_obliques'],
+    modality: 'REHIT',
+    durationMinutes: 15,
+    lowImpactOnly: false
+  },
+  {
+    day: 7,
+    titleTh: 'วันที่ 7: จบภารกิจ Full-Body 20 นาที',
+    subtitleTh: '20 นาที • รวมท่าครบทุกมัดกล้ามเนื้อหลัก',
+    isFullBody: true,
+    selectedMuscles: MUSCLE_GROUPS.map(m => m.id),
+    modality: 'CARDIO',
+    durationMinutes: 20,
+    lowImpactOnly: false
+  }
+];
+
+export const USER_PROFILE_STORAGE_KEY = 'kinetic_3d_user_profile_v1';
+
+const DEFAULT_USER_PROFILE = {
+  weightKg: 70,
+  heightCm: 170,
+  age: 30,
+  weeklyGoalDays: 4,
+  injuredJoints: [],
+  preferredGoal: '',
+  developerMode: false
+};
+
+export function loadUserProfile() {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return { ...DEFAULT_USER_PROFILE };
+    }
+    const raw = window.localStorage.getItem(USER_PROFILE_STORAGE_KEY);
+    if (!raw) return { ...DEFAULT_USER_PROFILE };
+    const parsed = JSON.parse(raw);
+    return {
+      ...DEFAULT_USER_PROFILE,
+      ...parsed,
+      weightKg: Math.min(200, Math.max(35, Number(parsed.weightKg) || 70)),
+      heightCm: Math.min(230, Math.max(120, Number(parsed.heightCm) || 170)),
+      age: Math.min(100, Math.max(12, Number(parsed.age) || 30)),
+      weeklyGoalDays: Math.min(7, Math.max(1, Number(parsed.weeklyGoalDays) || 4)),
+      injuredJoints: Array.isArray(parsed.injuredJoints) ? parsed.injuredJoints : [],
+      developerMode: Boolean(parsed.developerMode)
+    };
+  } catch {
+    return { ...DEFAULT_USER_PROFILE };
+  }
+}
+
+export function saveUserProfile(profile) {
+  const sanitized = {
+    ...DEFAULT_USER_PROFILE,
+    ...profile,
+    weightKg: Math.min(200, Math.max(35, Number(profile?.weightKg) || 70)),
+    heightCm: Math.min(230, Math.max(120, Number(profile?.heightCm) || 170)),
+    age: Math.min(100, Math.max(12, Number(profile?.age) || 30)),
+    weeklyGoalDays: Math.min(7, Math.max(1, Number(profile?.weeklyGoalDays) || 4)),
+    injuredJoints: Array.isArray(profile?.injuredJoints) ? profile.injuredJoints : [],
+    developerMode: Boolean(profile?.developerMode)
+  };
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(sanitized));
+    }
+  } catch {}
+  return sanitized;
+}
+
 export const WARMUP_EXERCISES = [
   {
     id: 'warmup_dynamic_thoracic',
@@ -931,9 +1154,15 @@ export function buildRealisticMediaPrompt(exercise, options = {}) {
   };
 }
 
+function isExerciseJointSafe(exercise, injuredJoints = []) {
+  if (!Array.isArray(injuredJoints) || injuredJoints.length === 0) return true;
+  const load = inferJointLoad(exercise);
+  return !load.some(joint => injuredJoints.includes(joint));
+}
+
 /**
  * อัลกอริทึมจัดตารางฝึกตามกรอบเวลาที่แม่นยำ 100% รองรับ HIIT / REHIT / CARDIO / YOGA / 7MIN
- * และรองรับ Low-Impact Filter แบบ Sworkit
+ * รองรับ Low-Impact Filter, Joint Injury Filter และคำนวณแคลอรีตาม Phase MET + น้ำหนักจริง
  */
 export function generateTimeBoundedSchedule({
   selectedMuscles = ['chest_upper_Mid', 'lats_teres', 'quads', 'abs_rectus'],
@@ -942,7 +1171,9 @@ export function generateTimeBoundedSchedule({
   modality = 'HIIT',
   durationMinutes = 20,
   fitnessLevel = 'intermediate',
-  lowImpactOnly = false
+  lowImpactOnly = false,
+  weightKg = 70,
+  injuredJoints = []
 }) {
   const effectiveDuration = modality === '7MIN' ? 7 : Number(durationMinutes);
   const totalSeconds = Math.max(420, Math.round(effectiveDuration * 60));
@@ -952,28 +1183,41 @@ export function generateTimeBoundedSchedule({
     : selectedMuscles;
 
   const activeEquip = selectedEquipment.length === 0 ? ['bodyweight'] : selectedEquipment;
+  const activeInjuredJoints = Array.isArray(injuredJoints) ? injuredJoints : [];
+  let jointFilterFallbackUsed = false;
 
   let candidatePool = EXERCISE_DATABASE.filter(ex => {
     const matchMuscle = activeMuscles.includes(ex.primaryMuscle);
     const matchEquip = ex.equipment.some(eq => activeEquip.includes(eq));
     const matchImpact = !lowImpactOnly || ex.lowImpact;
+    const matchJoints = isExerciseJointSafe(ex, activeInjuredJoints);
     const matchModality = modality === 'YOGA'
       ? ex.supportedModalities.includes('YOGA')
       : true;
-    return matchMuscle && matchEquip && matchImpact && matchModality;
+    return matchMuscle && matchEquip && matchImpact && matchJoints && matchModality;
   });
 
-  // Fallback หากกรองแล้วมีน้อยเกินไป
+  // Fallback ขั้น 1: คงการป้องกันข้อต่อบาดเจ็บไว้ แต่ผ่อนปรนเงื่อนไขอุปกรณ์/โหมด
   if (candidatePool.length < 3) {
     const relaxPool = EXERCISE_DATABASE.filter(ex => {
       const matchMuscle = activeMuscles.includes(ex.primaryMuscle);
       const matchImpact = !lowImpactOnly || ex.lowImpact;
+      const matchJoints = isExerciseJointSafe(ex, activeInjuredJoints);
       const matchEquip = ex.equipment.includes('bodyweight') || ex.equipment.includes('yoga_mat') || ex.equipment.some(eq => activeEquip.includes(eq));
-      return matchMuscle && matchImpact && matchEquip;
+      return matchMuscle && matchImpact && matchJoints && matchEquip;
     });
     candidatePool = [...new Map([...candidatePool, ...relaxPool].map(item => [item.id, item])).values()];
   }
+  // Fallback ขั้น 2: เปิดทุกมัดที่ปลอดภัยต่อข้อต่อที่บาดเจ็บ
   if (candidatePool.length < 2) {
+    const safeAnyMuscle = EXERCISE_DATABASE.filter(
+      ex => (!lowImpactOnly || ex.lowImpact) && isExerciseJointSafe(ex, activeInjuredJoints)
+    );
+    candidatePool = [...new Map([...candidatePool, ...safeAnyMuscle].map(item => [item.id, item])).values()];
+  }
+  // Fallback ขั้น 3: กรณีบาดเจ็บหลายข้อต่อพร้อมกันจนไม่มีท่าตรงเงื่อนไข
+  if (candidatePool.length < 2) {
+    jointFilterFallbackUsed = activeInjuredJoints.length > 0;
     candidatePool = EXERCISE_DATABASE.filter(ex => !lowImpactOnly || ex.lowImpact);
   }
 
@@ -1157,11 +1401,14 @@ export function generateTimeBoundedSchedule({
     fitnessLevel,
     durationMinutes: effectiveDuration,
     lowImpactOnly,
+    weightKg,
+    injuredJoints: activeInjuredJoints,
+    jointFilterFallbackUsed,
     totalSeconds: cumulativeSec,
     selectedMuscles: activeMuscles,
     selectedEquipment: activeEquip,
     steps: finalizedSteps,
-    summary: calculateScheduleMetrics(finalizedSteps, modality)
+    summary: calculateScheduleMetrics(finalizedSteps, modality, weightKg)
   };
 }
 
@@ -1196,6 +1443,7 @@ function createStepObject(stepNumber, phaseType, exercise, durationSec, roundLab
   const promptData = buildRealisticMediaPrompt(exercise, options);
   const muscleMeta = MUSCLE_GROUPS.find(m => m.id === exercise.primaryMuscle) || MUSCLE_GROUPS[0];
   return {
+    id: exercise.id || `step_${stepNumber}`,
     stepNumber,
     type: phaseType,
     exerciseId: exercise.id,
@@ -1207,6 +1455,7 @@ function createStepObject(stepNumber, phaseType, exercise, durationSec, roundLab
     secondaryMuscles: exercise.secondaryMuscles || [],
     equipment: exercise.equipment || ['bodyweight'],
     lowImpact: Boolean(exercise.lowImpact),
+    jointLoad: inferJointLoad(exercise),
     emgActivation: exercise.emgActivation || { [exercise.primaryMuscle]: 85 },
     videoKinematics: exercise.videoKinematics || { poseType: 'squat', tempoSec: 1.5, equipRender: 'bodyweight', rangeDeg: 80 },
     duration: durationSec,
@@ -1217,7 +1466,12 @@ function createStepObject(stepNumber, phaseType, exercise, durationSec, roundLab
   };
 }
 
-function calculateScheduleMetrics(steps, modality) {
+/**
+ * คำนวณแคลอรีและเวลารวมแยกตาม Phase (Warm-up/Cool-down MET 3.5, Rest MET 2.5, Work/Sprint ตาม Modality)
+ * คูณด้วยน้ำหนักตัวจริงของผู้ใช้ (35–200 kg)
+ */
+export function calculateScheduleMetrics(steps, modality, userWeightKg = 70) {
+  const weightKg = Math.min(200, Math.max(35, Number(userWeightKg) || 70));
   const workSteps = steps.filter(s => s.type === 'WORK' || s.type === 'SPRINT');
   const restSteps = steps.filter(s => s.type === 'REST');
   const warmupSec = steps.filter(s => s.type === 'WARMUP').reduce((a, b) => a + b.duration, 0);
@@ -1226,9 +1480,16 @@ function calculateScheduleMetrics(steps, modality) {
   const cooldownSec = steps.filter(s => s.type === 'COOLDOWN').reduce((a, b) => a + b.duration, 0);
   const totalSec = warmupSec + workSec + restSec + cooldownSec;
 
-  const metMap = { REHIT: 11.5, HIIT: 10.2, '7MIN': 9.8, CARDIO: 7.8, YOGA: 4.2 };
-  const metValue = metMap[modality] || 8.5;
-  const estimatedKcal = Math.round((metValue * 3.5 * 70 / 200) * (totalSec / 60));
+  const workMetMap = { REHIT: 11.5, HIIT: 10.2, '7MIN': 9.8, CARDIO: 7.8, YOGA: 4.2 };
+  const workMet = workMetMap[modality] || 8.5;
+  const restMet = modality === 'REHIT' ? 3.2 : 2.5;
+  const warmCoolMet = 3.5;
+
+  const kcalPerMetMin = (3.5 * weightKg) / 200;
+  const workKcal = workMet * kcalPerMetMin * (workSec / 60);
+  const restKcal = restMet * kcalPerMetMin * (restSec / 60);
+  const warmCoolKcal = warmCoolMet * kcalPerMetMin * ((warmupSec + cooldownSec) / 60);
+  const estimatedKcal = Math.max(1, Math.round(workKcal + restKcal + warmCoolKcal));
 
   return {
     totalSteps: steps.length,
@@ -1238,8 +1499,9 @@ function calculateScheduleMetrics(steps, modality) {
     restSec,
     cooldownSec,
     totalSec,
+    weightKg,
     estimatedKcal,
-    burnRatePerMin: Number(((estimatedKcal / Math.max(1, totalSec / 60))).toFixed(1))
+    burnRatePerMin: Number((estimatedKcal / Math.max(1, totalSec / 60)).toFixed(1))
   };
 }
 
@@ -1249,11 +1511,14 @@ export function swapExerciseInSchedule(schedule, stepIndex) {
     return schedule;
   }
 
+  const injuredJoints = schedule.injuredJoints || [];
+
   const sameMusclePool = EXERCISE_DATABASE.filter(
     ex =>
       ex.id !== targetStep.exerciseId &&
       ex.primaryMuscle === targetStep.primaryMuscle &&
       (!schedule.lowImpactOnly || ex.lowImpact) &&
+      isExerciseJointSafe(ex, injuredJoints) &&
       ex.equipment.some(eq => schedule.selectedEquipment.includes(eq))
   );
 
@@ -1261,12 +1526,24 @@ export function swapExerciseInSchedule(schedule, stepIndex) {
     ex =>
       ex.id !== targetStep.exerciseId &&
       (!schedule.lowImpactOnly || ex.lowImpact) &&
+      isExerciseJointSafe(ex, injuredJoints) &&
       schedule.selectedMuscles.includes(ex.primaryMuscle) &&
       ex.equipment.some(eq => schedule.selectedEquipment.includes(eq))
   );
 
-  const fallbackPool = EXERCISE_DATABASE.filter(ex => ex.id !== targetStep.exerciseId);
-  const pool = sameMusclePool.length > 0 ? sameMusclePool : broaderPool.length > 0 ? broaderPool : fallbackPool;
+  const safeFallbackPool = EXERCISE_DATABASE.filter(
+    ex => ex.id !== targetStep.exerciseId && isExerciseJointSafe(ex, injuredJoints)
+  );
+  const anyFallbackPool = EXERCISE_DATABASE.filter(ex => ex.id !== targetStep.exerciseId);
+
+  const pool =
+    sameMusclePool.length > 0
+      ? sameMusclePool
+      : broaderPool.length > 0
+      ? broaderPool
+      : safeFallbackPool.length > 0
+      ? safeFallbackPool
+      : anyFallbackPool;
   const replacement = pool[Math.floor(Math.random() * pool.length)];
 
   const newStep = createStepObject(
@@ -1284,65 +1561,237 @@ export function swapExerciseInSchedule(schedule, stepIndex) {
 
   return {
     ...schedule,
-    steps: schedule.steps.map((st, idx) =>
-      idx === stepIndex ? { ...newStep, index: st.index, startTimeSec: st.startTimeSec, endTimeSec: st.endTimeSec } : st
-    )
+    steps: schedule.steps.map((st, idx) => {
+      if (idx === stepIndex) {
+        return {
+          ...newStep,
+          index: st.index,
+          startTimeSec: st.startTimeSec,
+          endTimeSec: st.endTimeSec
+        };
+      }
+      if (idx === stepIndex - 1 && st.type === 'REST' && schedule.modality !== 'REHIT') {
+        return {
+          ...st,
+          nameEn: schedule.modality === 'YOGA' ? `Mindful Transition → ${replacement.nameEn}` : `Rest & Prepare → ${replacement.nameEn}`,
+          nameTh: schedule.modality === 'YOGA' ? `ปรับลมหายใจเข้าสู่ท่า: ${replacement.nameTh}` : `พัก & เตรียมท่าถัดไป: ${replacement.nameTh}`,
+          formCues: schedule.modality === 'YOGA'
+            ? `หายใจออกยาว ผ่อนคลายหัวไหล่ แล้วค่อยๆ จัดตำแหน่งร่างกายสำหรับ ${replacement.nameTh}`
+            : `สูดหายใจเข้าลึกทางจมูก เตรียมพร้อมสำหรับท่า ${replacement.nameTh}`,
+          primaryMuscle: replacement.primaryMuscle,
+          primaryMuscleTh: newStep.primaryMuscleTh,
+          primaryMuscleColor: newStep.primaryMuscleColor,
+          videoKinematics: replacement.videoKinematics,
+          mediaUrl: replacement.mediaUrl,
+          aiPrompt: newStep.aiPrompt
+        };
+      }
+      return st;
+    })
   };
 }
 
 /**
- * ระบบ JEFIT Recovery & History Tracker (LocalStorage)
+ * ระบบ JEFIT Recovery, Streak & History Tracker (LocalStorage)
  */
-const STORAGE_KEY = 'kinetic_3d_workout_history_v2';
+export const WORKOUT_HISTORY_STORAGE_KEY = 'kinetic_3d_workout_history_v2_1';
+const LEGACY_STORAGE_KEY = 'kinetic_3d_workout_history_v2';
+
+const DEFAULT_WORKOUT_STATS = {
+  totalSessions: 0,
+  totalMinutes: 0,
+  totalKcal: 0,
+  currentStreakDays: 0,
+  bestStreakDays: 0,
+  weeklyCompletedDays: 0,
+  workoutDates: [],
+  completedChallengeDays: [],
+  recentRpe: [],
+  muscleFatigue: {}
+};
+
+function getLocalDateStr(ts = Date.now()) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function computeStreakMetrics(workoutDates = [], referenceTs = Date.now()) {
+  const uniqueDesc = [...new Set(workoutDates.filter(Boolean))].sort().reverse();
+  if (uniqueDesc.length === 0) {
+    return { currentStreakDays: 0, bestStreakDays: 0, weeklyCompletedDays: 0 };
+  }
+
+  const dayMs = 86400000;
+  const toUtcDay = str => {
+    const [y, m, d] = str.split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+
+  const todayUtc = toUtcDay(getLocalDateStr(referenceTs));
+  const latestUtc = toUtcDay(uniqueDesc[0]);
+  let currentStreakDays = 0;
+  if (todayUtc - latestUtc <= dayMs) {
+    currentStreakDays = 1;
+    for (let i = 1; i < uniqueDesc.length; i++) {
+      if (toUtcDay(uniqueDesc[i - 1]) - toUtcDay(uniqueDesc[i]) === dayMs) {
+        currentStreakDays++;
+      } else {
+        break;
+      }
+    }
+  }
+
+  const asc = [...uniqueDesc].reverse();
+  let bestStreakDays = 1;
+  let running = 1;
+  for (let i = 1; i < asc.length; i++) {
+    if (toUtcDay(asc[i]) - toUtcDay(asc[i - 1]) === dayMs) {
+      running++;
+      if (running > bestStreakDays) bestStreakDays = running;
+    } else {
+      running = 1;
+    }
+  }
+
+  const weekAgoUtc = todayUtc - 6 * dayMs;
+  const weeklyCompletedDays = uniqueDesc.filter(d => toUtcDay(d) >= weekAgoUtc && toUtcDay(d) <= todayUtc).length;
+
+  return { currentStreakDays, bestStreakDays, weeklyCompletedDays };
+}
 
 export function loadWorkoutStats() {
   try {
     if (typeof window === 'undefined' || !window.localStorage) {
-      return { totalSessions: 0, totalMinutes: 0, totalKcal: 0, muscleFatigue: {} };
+      return { ...DEFAULT_WORKOUT_STATS };
     }
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { totalSessions: 0, totalMinutes: 0, totalKcal: 0, muscleFatigue: {} };
-    return JSON.parse(raw);
+    const raw = window.localStorage.getItem(WORKOUT_HISTORY_STORAGE_KEY) || window.localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!raw) return { ...DEFAULT_WORKOUT_STATS };
+    const parsed = JSON.parse(raw);
+    const merged = { ...DEFAULT_WORKOUT_STATS, ...parsed };
+    const streak = computeStreakMetrics(merged.workoutDates || []);
+    return { ...merged, ...streak };
   } catch {
-    return { totalSessions: 0, totalMinutes: 0, totalKcal: 0, muscleFatigue: {} };
+    return { ...DEFAULT_WORKOUT_STATS };
   }
 }
 
-export function logCompletedWorkoutSession(schedule) {
+function persistWorkoutStats(stats) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(WORKOUT_HISTORY_STORAGE_KEY, JSON.stringify(stats));
+    }
+  } catch {}
+}
+
+export function logCompletedWorkoutSession(schedule, options = {}) {
   const current = loadWorkoutStats();
   const nextFatigue = { ...(current.muscleFatigue || {}) };
-  const nowTs = Date.now();
+  const nowTs = options.timestamp || Date.now();
+  const dateStr = options.dateStr || getLocalDateStr(nowTs);
 
-  (schedule.selectedMuscles || []).forEach(mId => {
-    const prevScore = nextFatigue[mId]?.score || 100;
+  const stepsSource =
+    Array.isArray(options.completedSteps) && options.completedSteps.length > 0
+      ? options.completedSteps
+      : (schedule.steps || []).filter(s => s.type === 'WORK' || s.type === 'SPRINT');
+
+  const modalityFactor =
+    schedule.modality === 'YOGA' ? 1.8 : schedule.modality === 'REHIT' ? 9.5 : schedule.modality === 'HIIT' ? 6.5 : 5.2;
+
+  const muscleLoad = {};
+  stepsSource.forEach(step => {
+    const stepMinutes = (step.duration || 0) / 60;
+    const emg = step.emgActivation || { [step.primaryMuscle]: 85 };
+    Object.entries(emg).forEach(([mId, pct]) => {
+      muscleLoad[mId] = (muscleLoad[mId] || 0) + stepMinutes * (Number(pct) / 100) * modalityFactor;
+    });
+  });
+
+  if (Object.keys(muscleLoad).length === 0) {
+    (schedule.selectedMuscles || []).forEach(mId => {
+      muscleLoad[mId] = Math.max(3, (schedule.durationMinutes || 7) * 0.8);
+    });
+  }
+
+  Object.entries(muscleLoad).forEach(([mId, loadVal]) => {
+    const prevRecovery = getMuscleRecoveryPercent(current, mId, nowTs);
+    const fatigueDrop = Math.min(45, Math.max(2, Math.round(loadVal)));
     nextFatigue[mId] = {
-      score: Math.max(35, prevScore - (schedule.modality === 'YOGA' ? 5 : 28)),
+      score: Math.max(25, Math.round(prevRecovery - fatigueDrop)),
       lastTrainedAt: nowTs
     };
   });
+
+  const nextDates = [...new Set([...(current.workoutDates || []), dateStr])];
+  const streak = computeStreakMetrics(nextDates, nowTs);
+
+  const nextRpe = [...(current.recentRpe || [])];
+  if (options.rpe) {
+    nextRpe.push({
+      date: dateStr,
+      modality: schedule.modality,
+      durationMin: schedule.durationMinutes,
+      rpe: options.rpe
+    });
+  }
+
+  const nextChallengeDays = options.completedChallengeDay
+    ? [...new Set([...(current.completedChallengeDays || []), options.completedChallengeDay])]
+    : current.completedChallengeDays || [];
 
   const updated = {
     totalSessions: (current.totalSessions || 0) + 1,
     totalMinutes: (current.totalMinutes || 0) + (schedule.durationMinutes || 0),
     totalKcal: (current.totalKcal || 0) + (schedule.summary?.estimatedKcal || 0),
     lastModality: schedule.modality,
+    workoutDates: nextDates,
+    currentStreakDays: streak.currentStreakDays,
+    bestStreakDays: Math.max(current.bestStreakDays || 0, streak.bestStreakDays),
+    weeklyCompletedDays: streak.weeklyCompletedDays,
+    completedChallengeDays: nextChallengeDays,
+    recentRpe: nextRpe.slice(-14),
     muscleFatigue: nextFatigue
   };
 
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    }
-  } catch {}
+  persistWorkoutStats(updated);
   return updated;
 }
 
-export function getMuscleRecoveryPercent(stats, muscleId) {
+export function recordSessionRpe(rpe, modality = 'HIIT', durationMin = 20) {
+  const current = loadWorkoutStats();
+  const dateStr = getLocalDateStr(Date.now());
+  const nextRpe = [
+    ...(current.recentRpe || []),
+    { date: dateStr, modality, durationMin, rpe }
+  ].slice(-14);
+  const updated = { ...current, recentRpe: nextRpe };
+  persistWorkoutStats(updated);
+  return updated;
+}
+
+export function getMuscleRecoveryPercent(stats, muscleId, nowTs = Date.now()) {
   const entry = stats?.muscleFatigue?.[muscleId];
   if (!entry) return 100;
-  const hoursElapsed = (Date.now() - (entry.lastTrainedAt || Date.now())) / 3600000;
+  const hoursElapsed = Math.max(0, (nowTs - (entry.lastTrainedAt || nowTs)) / 3600000);
   const recovered = Math.min(100, Math.round(entry.score + hoursElapsed * 2.5));
   return recovered;
+}
+
+/**
+ * Smart Recovery Auto-Pick (US-401): เลือกมัดกล้ามเนื้อที่ฟื้นตัว >= 85%
+ * หากมีน้อยกว่า 2 มัด ให้เลือก 3 อันดับแรกที่ฟื้นตัวสูงสุด
+ */
+export function pickSmartRecoveredMuscles(stats, threshold = 85) {
+  const scored = MUSCLE_GROUPS.map(m => ({
+    id: m.id,
+    score: getMuscleRecoveryPercent(stats, m.id)
+  })).sort((a, b) => b.score - a.score);
+
+  const ready = scored.filter(item => item.score >= threshold).map(item => item.id);
+  if (ready.length >= 2) return ready;
+  return scored.slice(0, 3).map(item => item.id);
 }
 
 /**
