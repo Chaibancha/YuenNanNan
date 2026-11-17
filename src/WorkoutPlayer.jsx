@@ -200,7 +200,7 @@ export default function WorkoutPlayer({
 
   // Mount Biomechanical Looping Video Stream Engine
   useEffect(() => {
-    const engine = new BiomechanicalVideoLoopEngine({ width: 640, height: 390, fps: 30 });
+    const engine = new BiomechanicalVideoLoopEngine({ width: 800, height: 488, fps: 30 });
     videoEngineRef.current = engine;
     if (videoElRef.current) {
       engine.attachToVideo(videoElRef.current, fallbackCanvasRef.current);

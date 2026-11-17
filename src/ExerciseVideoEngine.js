@@ -8,8 +8,26 @@
  * ============================================================================
  */
 
+const PHOTO_CACHE = new Map();
+
+/**
+ * Exercises that ship a real-human 2-panel keyframe sheet in public/media/exercises/<id>.jpg.
+ * All other exercises keep using the procedural biomechanical athlete loop.
+ */
+export const REAL_HUMAN_MEDIA_IDS = [
+  'ex_pushup_explosive',
+  'ex_neck_isometric_mobility',
+  'ex_db_push_press',
+  'ex_pike_shoulder_pushup',
+  'ex_kb_high_pull_traps',
+  'ex_russian_twist_power',
+  'ex_side_plank_rotation',
+  'ex_kb_russian_swing'
+];
+
 export class BiomechanicalVideoLoopEngine {
   constructor(options = {}) {
+    this.photoMode = options.photoMode !== false;
     this.width = options.width || 640;
     this.height = options.height || 400;
     this.fps = options.fps || 30;
@@ -103,6 +121,7 @@ export class BiomechanicalVideoLoopEngine {
 
   prewarmStep(step) {
     if (step && step.exerciseId) {
+      this.getPhotoFrames(step.exerciseId);
       this.prewarmedSteps.set(step.exerciseId, {
         poseType: step.videoKinematics?.poseType || 'squat',
         equipRender: step.videoKinematics?.equipRender || 'bodyweight',
@@ -170,6 +189,17 @@ export class BiomechanicalVideoLoopEngine {
     const primaryColor = step?.primaryMuscleColor || '#f97316';
     const isRest = step?.type === 'REST' || step?.type === 'COOLDOWN';
 
+    // 0. Real-human photographic loop (preferred when keyframes exist for this exercise)
+    if (this.photoMode) {
+      const photo = this.getPhotoFrames(step?.exerciseId);
+      if (photo) {
+        this.drawPhotoLoop(ctx, W, H, photo, wave);
+        this.drawVideoHud(ctx, W, H, wave, cyclePhase, primaryColor, this.resolveEquipmentRender(kin.equipRender, step?.equipment || []), step);
+        this.mirrorToFallback();
+        return;
+      }
+    }
+
     // 1. Dark Medical Studio Background + Floor Perspective
     const bgGrad = ctx.createRadialGradient(W * 0.5, H * 0.35, 30, W * 0.5, H * 0.5, W * 0.72);
     bgGrad.addColorStop(0, isRest ? '#0c1f29' : '#1f1612');
@@ -210,13 +240,79 @@ export class BiomechanicalVideoLoopEngine {
     // 5. Render Subtle Loop Phase Arc & Contraction Telemetry
     this.drawVideoHud(ctx, W, H, wave, cyclePhase, primaryColor, activeEquip, step);
 
-    // Mirror onto fallback canvas if provided
+    this.mirrorToFallback();
+  }
+
+  mirrorToFallback() {
     if (this.fallbackCanvasEl) {
       const fCtx = this.fallbackCanvasEl.getContext('2d');
       if (fCtx) {
         fCtx.drawImage(this.canvas, 0, 0, this.fallbackCanvasEl.width, this.fallbackCanvasEl.height);
       }
     }
+  }
+
+  /**
+   * Real-human keyframe sheet for an exercise: one 2-panel JPG (left = start pose, right = end pose)
+   * Returns null while loading / when the asset is missing (caller falls back to procedural athlete).
+   */
+  getPhotoFrames(exerciseId) {
+    if (!exerciseId || typeof Image === 'undefined' || !REAL_HUMAN_MEDIA_IDS.includes(exerciseId)) return null;
+    let entry = PHOTO_CACHE.get(exerciseId);
+    if (!entry) {
+      entry = { img: new Image(), ready: false, failed: false };
+      entry.img.onload = () => {
+        entry.ready = entry.img.naturalWidth > 0;
+      };
+      entry.img.onerror = () => {
+        entry.failed = true;
+      };
+      let src = `media/exercises/${exerciseId}.jpg`;
+      try {
+        if (typeof document !== 'undefined' && document.baseURI) {
+          src = new URL(src, document.baseURI).href;
+        }
+      } catch {}
+      entry.img.src = src;
+      PHOTO_CACHE.set(exerciseId, entry);
+    }
+    return entry.ready ? entry.img : null;
+  }
+
+  setPhotoMode(enabled) {
+    this.photoMode = Boolean(enabled);
+  }
+
+  drawPhotoLoop(ctx, W, H, img, wave) {
+    const halfW = Math.floor(img.naturalWidth / 2);
+    const imgH = img.naturalHeight;
+    // Studio-white backdrop that matches the photo background so letterboxing is invisible
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#fafafa');
+    bg.addColorStop(1, '#ececee');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Hold both end poses briefly, ease between them (smoothstep) so the loop reads as real motion
+    const raw = Math.min(1, Math.max(0, (wave - 0.12) / 0.76));
+    const t = raw * raw * (3 - 2 * raw);
+
+    const breathe = 1 + 0.012 * Math.sin(wave * Math.PI);
+    const scale = (H / imgH) * breathe;
+    const dw = halfW * scale;
+    const dh = imgH * scale;
+    const dx = (W - dw) / 2;
+    const dy = (H - dh) / 2;
+
+    ctx.save();
+    ctx.globalAlpha = 1;
+    // 4px inset on each panel edge hides the thin seam between the two generated halves
+    const inset = 4;
+    const sw = halfW - inset * 2;
+    ctx.drawImage(img, inset, 0, sw, imgH, dx, dy, dw, dh);
+    ctx.globalAlpha = t;
+    ctx.drawImage(img, halfW + inset, 0, sw, imgH, dx, dy, dw, dh);
+    ctx.restore();
   }
 
   resolveEquipmentRender(kinEquip, stepEquipList) {

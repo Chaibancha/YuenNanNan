@@ -1,8 +1,19 @@
-const CACHE_NAME = 'kinetic-medfit-3d-v3';
+const CACHE_NAME = 'kinetic-medfit-3d-v4';
+const REAL_HUMAN_MEDIA = [
+  'ex_pushup_explosive',
+  'ex_neck_isometric_mobility',
+  'ex_db_push_press',
+  'ex_pike_shoulder_pushup',
+  'ex_kb_high_pull_traps',
+  'ex_russian_twist_power',
+  'ex_side_plank_rotation',
+  'ex_kb_russian_swing'
+].map(id => `./media/exercises/${id}.jpg`);
 const CORE_ASSETS = [
   './',
   './Index.html',
-  './manifest.json'
+  './manifest.json',
+  ...REAL_HUMAN_MEDIA
 ];
 
 self.addEventListener('install', event => {
