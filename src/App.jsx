@@ -163,6 +163,23 @@ export default function App() {
     [isFullBody, selectedMuscles, guardScheduleChange, showToastMessage]
   );
 
+  // Body-region pick from 3D Ecorché: atomically replace the muscle selection
+  const handleSetMuscles = useCallback(
+    nextIds => {
+      const valid = MUSCLE_GROUPS.map(m => m.id).filter(id => nextIds.includes(id));
+      if (valid.length === 0) {
+        showToastMessage('ต้องเลือกอย่างน้อย 1 มัดกล้ามเนื้อสำหรับจัดตาราง');
+        return;
+      }
+      guardScheduleChange('ปรับเปลี่ยนส่วนของร่างกายเป้าหมาย', () => {
+        setActiveChallengeDay(null);
+        setIsFullBody(valid.length === MUSCLE_GROUPS.length);
+        setSelectedMuscles(valid);
+      });
+    },
+    [guardScheduleChange, showToastMessage]
+  );
+
   const handleToggleFullBody = useCallback(() => {
     guardScheduleChange('สลับโหมดทั่วร่างกาย (Full Body)', () => {
       setActiveChallengeDay(null);
@@ -592,6 +609,7 @@ export default function App() {
                   selectedMuscles={selectedMuscles}
                   isFullBody={isFullBody}
                   onToggleMuscle={handleToggleMuscle}
+                  onSetMuscles={handleSetMuscles}
                   onToggleFullBody={handleToggleFullBody}
                   onSmartRecoveryPick={handleSmartRecoveryPick}
                   activeHighlightMuscle={activeHighlightMuscle}

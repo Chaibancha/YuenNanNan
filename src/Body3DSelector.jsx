@@ -7,7 +7,11 @@ import {
   MSD_MANUAL_REFERENCE_URL,
   attachBioDigitalBridge,
   buildMedicalAnatomyGroup,
-  applyMedicalViewModeColors
+  applyMedicalViewModeColors,
+  emphasizeMuscleMeshes,
+  BODY_REGIONS,
+  getRegionForMuscle,
+  getSubMuscleLabel
 } from './Body3DAnatomy.js';
 
 /**
@@ -15,12 +19,14 @@ import {
  * Body3DSelector.jsx (v2.1 — Dual-Engine BioDigital × MSD Manual + Ecorché 3D)
  * รองรับทั้งโมเดล 3 มิติทางการแพทย์จาก BioDigital Human / MSD Manual (be=2PcB)
  * และโมเดล Three.js Ecorché พร้อมเครื่องมือ Select / Dissect / Isolate
+ * โหมด Ecorché เลือกได้ 2 ระดับ: "ส่วนของร่างกาย" (Region) และ "มัดกล้ามเนื้อเดี่ยว" (Muscle)
  * ============================================================================
  */
 export default function Body3DSelector({
   selectedMuscles = [],
   isFullBody = false,
   onToggleMuscle,
+  onSetMuscles,
   onToggleFullBody,
   onSmartRecoveryPick,
   activeHighlightMuscle = null,
@@ -35,6 +41,36 @@ export default function Body3DSelector({
   const toolModeRef = useRef('select');
   const onToggleMuscleRef = useRef(onToggleMuscle);
   onToggleMuscleRef.current = onToggleMuscle;
+  const onSetMusclesRef = useRef(onSetMuscles);
+  onSetMusclesRef.current = onSetMuscles;
+  const selectedMusclesRef = useRef(selectedMuscles);
+  selectedMusclesRef.current = selectedMuscles;
+  const isFullBodyRef = useRef(isFullBody);
+  isFullBodyRef.current = isFullBody;
+  const pickModeRef = useRef('muscle');
+
+  const [pickMode, setPickMode] = useState('muscle'); // 'muscle' (มัดเดี่ยว) | 'region' (ส่วนของร่างกาย)
+  const [hoveredMeshUid, setHoveredMeshUid] = useState(null);
+  const [pickedMesh, setPickedMesh] = useState(null); // { meshUid, muscleId, subLabel }
+  const [pickedRegionId, setPickedRegionId] = useState(null);
+  const [hoveredRegionId, setHoveredRegionId] = useState(null);
+  const [tooltip, setTooltip] = useState(null); // { x, y, th, en, groupTh }
+  pickModeRef.current = pickMode;
+
+  // เลือก/ยกเลิก "ส่วนของร่างกาย" ทั้งส่วน (ซิงค์เข้าตารางฝึกแบบ atomic ผ่าน onSetMuscles)
+  const selectRegionRef = useRef(null);
+  selectRegionRef.current = regionId => {
+    const region = BODY_REGIONS.find(r => r.id === regionId);
+    if (!region) return;
+    setPickedRegionId(regionId);
+    setFocusedMuscle(region.muscleIds[0]);
+    const ids = region.muscleIds;
+    const current = isFullBodyRef.current ? [] : selectedMusclesRef.current;
+    const allIn = ids.every(id => current.includes(id));
+    const next = allIn ? current.filter(id => !ids.includes(id)) : [...new Set([...current, ...ids])];
+    if (onSetMusclesRef.current) onSetMusclesRef.current(next);
+    else ids.forEach(id => onToggleMuscleRef.current?.(id));
+  };
 
   const [engineMode, setEngineMode] = useState('biodigital'); // 'biodigital' | 'ecorche'
   const [toolMode, setToolMode] = useState('select'); // 'select' | 'dissect' | 'isolate'
@@ -147,13 +183,30 @@ export default function Body3DSelector({
       return raycaster.intersectObjects(visibleMeshes, false);
     };
 
+    const buildTip = (e, hitData) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const sub = getSubMuscleLabel(hitData.subLabel);
+      return {
+        x: Math.min(Math.max(8, e.clientX - rect.left + 14), rect.width - 8),
+        y: Math.max(8, e.clientY - rect.top - 10),
+        th: sub.th,
+        en: sub.en,
+        groupTh: (hitData.meta?.nameTh || '').split(' (')[0]
+      };
+    };
+
     const handlePointerMove = e => {
       const hits = getIntersects(e.clientX, e.clientY);
       if (hits.length > 0) {
-        setHoveredMuscle(hits[0].object.userData.muscleId);
+        const hitData = hits[0].object.userData;
+        setHoveredMuscle(hitData.muscleId);
+        setHoveredMeshUid(hitData.meshUid);
+        setTooltip(buildTip(e, hitData));
         renderer.domElement.style.cursor = 'pointer';
       } else {
         setHoveredMuscle(null);
+        setHoveredMeshUid(null);
+        setTooltip(null);
         renderer.domElement.style.cursor = 'grab';
       }
     };
@@ -169,22 +222,40 @@ export default function Body3DSelector({
         if (hits.length > 0) {
           const hitData = hits[0].object.userData;
           setHoveredMuscle(hitData.muscleId);
+          setHoveredMeshUid(hitData.meshUid);
+          setTooltip(buildTip(e, hitData));
           setFocusedMuscle(hitData.muscleId);
           if (toolModeRef.current === 'dissect') {
             setDissectedMeshIds(prev => [...prev, hitData.meshUid]);
           } else if (toolModeRef.current === 'isolate') {
             setIsolatedMuscleId(prev => (prev === hitData.muscleId ? null : hitData.muscleId));
-          } else if (onToggleMuscleRef.current) {
-            onToggleMuscleRef.current(hitData.muscleId);
+          } else {
+            setPickedMesh({ meshUid: hitData.meshUid, muscleId: hitData.muscleId, subLabel: hitData.subLabel });
+            if (pickModeRef.current === 'region') {
+              const region = getRegionForMuscle(hitData.muscleId);
+              if (region) selectRegionRef.current?.(region.id);
+            } else {
+              setPickedRegionId(null);
+              onToggleMuscleRef.current?.(hitData.muscleId);
+            }
           }
+        } else {
+          setPickedMesh(null);
         }
       }
+    };
+
+    const handlePointerLeave = () => {
+      setHoveredMuscle(null);
+      setHoveredMeshUid(null);
+      setTooltip(null);
     };
 
     const domElem = renderer.domElement;
     domElem.addEventListener('pointermove', handlePointerMove);
     domElem.addEventListener('pointerdown', handlePointerDown);
     domElem.addEventListener('pointerup', handlePointerUp);
+    domElem.addEventListener('pointerleave', handlePointerLeave);
 
     let reqId;
     const animate = () => {
@@ -218,6 +289,7 @@ export default function Body3DSelector({
       domElem.removeEventListener('pointermove', handlePointerMove);
       domElem.removeEventListener('pointerdown', handlePointerDown);
       domElem.removeEventListener('pointerup', handlePointerUp);
+      domElem.removeEventListener('pointerleave', handlePointerLeave);
       renderer.dispose();
     };
   }, []);
@@ -246,17 +318,33 @@ export default function Body3DSelector({
       tendonMeshes: tendonMeshesRef.current,
       selectedMuscles,
       isFullBody,
-      hoveredMuscle,
+      hoveredMuscle: null,
       activeHighlightMuscle,
       viewMode,
       recoveryStats,
       dissectedMeshIds,
       isolatedMuscleId
     });
+    const hoverRegion = BODY_REGIONS.find(r => r.id === hoveredRegionId);
+    const pickedRegion = BODY_REGIONS.find(r => r.id === pickedRegionId);
+    // โหมดส่วนของร่างกาย: ชี้มัดไหนก็ไฮไลต์ทั้งส่วนที่มัดนั้นสังกัด
+    const hoveredMeshMuscle = muscleMeshesRef.current.find(m => m.userData.meshUid === hoveredMeshUid)?.userData.muscleId;
+    const hoverRegionByMesh = pickMode === 'region' && hoveredMeshMuscle ? getRegionForMuscle(hoveredMeshMuscle) : null;
+    emphasizeMuscleMeshes({
+      muscleMeshes: muscleMeshesRef.current,
+      hoveredMeshUid: pickMode === 'muscle' ? hoveredMeshUid : null,
+      pickedMeshUid: pickMode === 'muscle' ? pickedMesh?.meshUid : null,
+      hoveredRegionIds: (hoverRegion || hoverRegionByMesh)?.muscleIds || [],
+      pickedRegionIds: pickMode === 'region' ? pickedRegion?.muscleIds || [] : []
+    });
   }, [
     selectedMuscles,
     isFullBody,
-    hoveredMuscle,
+    hoveredMeshUid,
+    pickedMesh,
+    hoveredRegionId,
+    pickedRegionId,
+    pickMode,
     activeHighlightMuscle,
     viewMode,
     recoveryStats,
@@ -435,6 +523,68 @@ export default function Body3DSelector({
           )}
         </div>
 
+        {/* BioDigital/MSD-style selection granularity: ส่วนของร่างกาย vs มัดกล้ามเนื้อเดี่ยว */}
+        <div className="flex flex-col gap-1.5 bg-zinc-950 px-2.5 py-2 rounded-2xl border border-zinc-800">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-bold text-zinc-400">โหมดการกดเลือกบนโมเดล</span>
+            <div className="grid grid-cols-2 gap-1 bg-zinc-900 p-0.5 rounded-xl">
+              {[
+                { id: 'muscle', label: '🎯 มัดเดี่ยว' },
+                { id: 'region', label: '🧍 ส่วนของร่างกาย' }
+              ].map(opt => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    setPickMode(opt.id);
+                    setPickedMesh(null);
+                    setPickedRegionId(null);
+                  }}
+                  className={`min-h-[34px] px-2.5 rounded-lg text-[11px] font-bold transition ${
+                    pickMode === opt.id ? 'bg-orange-500 text-white shadow' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-1 overflow-x-auto pb-1 -mx-0.5 px-0.5">
+            {BODY_REGIONS.map(region => {
+              const allIn = !isFullBody ? region.muscleIds.every(id => selectedMuscles.includes(id)) : true;
+              const active = isFullBody || allIn;
+              return (
+                <button
+                  key={region.id}
+                  type="button"
+                  onMouseEnter={() => setHoveredRegionId(region.id)}
+                  onMouseLeave={() => setHoveredRegionId(null)}
+                  onClick={() => {
+                    setPickMode('region');
+                    setPickedMesh(null);
+                    rotateCameraTo(region.view);
+                    selectRegionRef.current?.(region.id);
+                  }}
+                  className={`shrink-0 min-h-[36px] px-2.5 rounded-xl text-[11px] font-bold border transition flex items-center gap-1 ${
+                    active
+                      ? 'bg-orange-500/20 text-orange-200 border-orange-500/60'
+                      : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-600'
+                  } ${pickedRegionId === region.id ? 'ring-1 ring-cyan-400' : ''}`}
+                  title={region.nameEn}
+                >
+                  <span>{region.icon}</span>
+                  <span>{region.nameTh}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-zinc-500 leading-snug">
+            {pickMode === 'muscle'
+              ? 'ชี้ที่โมเดลเพื่อดูชื่อกล้ามเนื้อรายมัด แล้วกดเพื่อเลือกมัดนั้น (ซิงค์กลุ่มเข้าตารางฝึก)'
+              : 'กดมัดไหนก็ได้เพื่อเลือก/ยกเลิกทั้งส่วนของร่างกาย หรือกดชิปด้านบน'}
+          </p>
+        </div>
+
         {/* 3D Canvas Viewport */}
         <div className="relative w-full h-[380px] sm:h-[430px] rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800">
           <div
@@ -442,6 +592,17 @@ export default function Body3DSelector({
             className="w-full h-full"
             style={{ touchAction: orbitLocked ? 'pan-y' : 'none' }}
           />
+
+          {tooltip && (
+            <div
+              className="pointer-events-none absolute z-10 max-w-[220px] px-2.5 py-1.5 rounded-lg bg-zinc-950/95 border border-orange-500/60 shadow-xl"
+              style={{ left: tooltip.x, top: tooltip.y, transform: 'translateY(-100%)' }}
+            >
+              <div className="text-[11px] font-extrabold text-white leading-tight">{tooltip.th}</div>
+              <div className="text-[10px] font-mono text-orange-300 leading-tight">{tooltip.en}</div>
+              <div className="text-[10px] text-zinc-400 leading-tight">กลุ่ม: {tooltip.groupTh}</div>
+            </div>
+          )}
 
           <div className="absolute bottom-3 inset-x-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md p-1 rounded-xl border border-zinc-800">
@@ -491,6 +652,17 @@ export default function Body3DSelector({
             {displayMeta.nameEn}
           </span>
         </div>
+        {pickedMesh && engineMode === 'ecorche' && pickMode === 'muscle' && (
+          <p className="text-[11px] text-amber-300 font-semibold">
+            🎯 มัดที่เลือก: {getSubMuscleLabel(pickedMesh.subLabel).th} ({getSubMuscleLabel(pickedMesh.subLabel).en})
+          </p>
+        )}
+        {pickedRegionId && engineMode === 'ecorche' && pickMode === 'region' && (
+          <p className="text-[11px] text-amber-300 font-semibold">
+            🧍 ส่วนของร่างกาย: {BODY_REGIONS.find(r => r.id === pickedRegionId)?.nameTh} (
+            {BODY_REGIONS.find(r => r.id === pickedRegionId)?.nameEn})
+          </p>
+        )}
         <p className="text-[11px] text-cyan-300">
           จุดกำเนิด → จุดเกาะ (Origin/Insertion): <span className="text-zinc-300">{displayMeta.originInsertion}</span>
         </p>

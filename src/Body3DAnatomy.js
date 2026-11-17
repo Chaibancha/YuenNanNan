@@ -569,3 +569,109 @@ export function applyMedicalViewModeColors({
     }
   });
 }
+
+/**
+ * ส่วนของร่างกาย (Body Regions) แบบ BioDigital / MSD 3D Live
+ * 1 ส่วนของร่างกาย = หลายกลุ่มกล้ามเนื้อ (MUSCLE_GROUPS) — view = มุมกล้องที่เห็นส่วนนั้นชัดที่สุด
+ */
+export const BODY_REGIONS = [
+  { id: 'head_neck', nameTh: 'ศีรษะและคอ', nameEn: 'Head & Neck', icon: '🧠', view: 'front', muscleIds: ['neck_scm'] },
+  { id: 'shoulder', nameTh: 'ไหล่', nameEn: 'Shoulder', icon: '🦾', view: 'front', muscleIds: ['shoulders_anterior_lateral', 'shoulders_posterior_traps'] },
+  { id: 'chest', nameTh: 'อกและซี่โครง', nameEn: 'Thorax', icon: '🫁', view: 'front', muscleIds: ['chest_upper_Mid', 'serratus_obliques'] },
+  { id: 'abdomen', nameTh: 'หน้าท้อง', nameEn: 'Abdomen', icon: '🔥', view: 'front', muscleIds: ['abs_rectus'] },
+  { id: 'back', nameTh: 'หลัง', nameEn: 'Back', icon: '🔙', view: 'back', muscleIds: ['lats_teres', 'rhomboids_erector'] },
+  { id: 'upper_arm', nameTh: 'ต้นแขน', nameEn: 'Upper Arm', icon: '💪', view: 'front', muscleIds: ['biceps_brachialis', 'triceps'] },
+  { id: 'forearm', nameTh: 'แขนท่อนล่าง', nameEn: 'Forearm', icon: '✊', view: 'front', muscleIds: ['forearms'] },
+  { id: 'hip', nameTh: 'สะโพกและก้น', nameEn: 'Hip & Gluteal', icon: '🍑', view: 'back', muscleIds: ['glutes', 'hip_adductors'] },
+  { id: 'thigh', nameTh: 'ต้นขา', nameEn: 'Thigh', icon: '🦵', view: 'front', muscleIds: ['quads', 'hamstrings'] },
+  { id: 'lower_leg', nameTh: 'น่องและหน้าแข้ง', nameEn: 'Lower Leg', icon: '🦶', view: 'back', muscleIds: ['calves_tibialis'] }
+];
+
+export function getRegionForMuscle(muscleId) {
+  return BODY_REGIONS.find(r => r.muscleIds.includes(muscleId)) || null;
+}
+
+/** ชื่อไทยของกล้ามเนื้อรายมัด (sub-muscle) ที่กดเลือกได้ตรง ๆ บนโมเดล */
+export const SUB_MUSCLE_TH = {
+  Frontalis: 'กล้ามเนื้อหน้าผาก',
+  'Orbicularis Oris': 'กล้ามเนื้อรอบปาก',
+  Temporalis: 'กล้ามเนื้อขมับ',
+  Masseter: 'กล้ามเนื้อกราม',
+  Sternocleidomastoid: 'กล้ามเนื้อข้างคอ (SCM)',
+  'Splenius Capitis': 'กล้ามเนื้อท้ายทอย',
+  'Anterior Deltoid': 'ไหล่หน้า',
+  'Lateral Deltoid': 'ไหล่ข้าง',
+  'Posterior Deltoid': 'ไหล่หลัง',
+  'Upper Trapezius': 'กล้ามเนื้อบ่า',
+  'Pectoralis Clavicular': 'อกส่วนบน',
+  'Pectoralis Sternal': 'อกส่วนกลาง-ล่าง',
+  'Serratus Anterior': 'กล้ามเนื้อฟันเลื่อย',
+  'External Oblique': 'กล้ามเนื้อท้องด้านข้าง',
+  'Latissimus Dorsi': 'ปีกหลัง (แลต)',
+  'Teres Major': 'กล้ามเนื้อเทรีสเมเจอร์',
+  Rhomboids: 'กล้ามเนื้อระหว่างสะบัก',
+  'Erector Spinae': 'กล้ามเนื้อยืดหลัง',
+  'Biceps Brachii': 'ต้นแขนหน้า (ไบเซ็ป)',
+  Brachialis: 'กล้ามเนื้อบราคิอาลิส',
+  'Triceps Long Head': 'ต้นแขนหลัง (หัวยาว)',
+  'Triceps Lateral Head': 'ต้นแขนหลัง (หัวข้าง)',
+  Brachioradialis: 'กล้ามเนื้อแขนท่อนล่างด้านนอก',
+  'Extensor Carpi': 'กล้ามเนื้อเหยียดข้อมือ',
+  'Gluteus Maximus': 'กล้ามเนื้อก้นใหญ่',
+  'Gluteus Medius': 'กล้ามเนื้อก้นกลาง',
+  'Iliopsoas & TFL': 'กล้ามเนื้องอสะโพก',
+  'Adductor Magnus': 'กล้ามเนื้อต้นขาด้านใน',
+  'Rectus Femoris': 'กล้ามเนื้อต้นขาหน้า (เรกตัส)',
+  'Vastus Lateralis': 'ต้นขาหน้าด้านนอก',
+  'Vastus Medialis': 'ต้นขาหน้าด้านใน',
+  'Biceps Femoris': 'ต้นขาหลังด้านนอก',
+  Semitendinosus: 'ต้นขาหลังด้านใน',
+  'Gastrocnemius Lateral': 'น่องด้านนอก',
+  'Gastrocnemius Medial': 'น่องด้านใน',
+  'Tibialis Anterior': 'กล้ามเนื้อหน้าแข้ง'
+};
+
+export function getSubMuscleLabel(subLabel = '') {
+  const clean = subLabel.replace(/ L\d+$/, '');
+  if (subLabel.startsWith('Rectus Abdominis')) {
+    const row = subLabel.match(/L(\d+)$/)?.[1];
+    return { en: subLabel.replace(/ L\d+$/, row ? ` (แถว ${row})` : ''), th: `กล้ามเนื้อหน้าท้อง${row ? ` แถวที่ ${row}` : ''}` };
+  }
+  return { en: clean, th: SUB_MUSCLE_TH[clean] || clean };
+}
+
+/**
+ * Post-pass ของ applyMedicalViewModeColors: ไฮไลต์ "มัดเดี่ยว" ที่ชี้/กด และ "ทั้งส่วนของร่างกาย" ที่เลือก
+ * (ข้ามชิ้นที่ถูก Dissect หรือถูกทำให้โปร่งจาก Isolate)
+ */
+export function emphasizeMuscleMeshes({
+  muscleMeshes,
+  hoveredMeshUid = null,
+  pickedMeshUid = null,
+  hoveredRegionIds = [],
+  pickedRegionIds = []
+}) {
+  muscleMeshes.forEach(mesh => {
+    if (!mesh.visible || mesh.material.opacity < 0.1) return;
+    const { meshUid, muscleId } = mesh.userData;
+    const inPickedRegion = pickedRegionIds.includes(muscleId);
+    const inHoverRegion = hoveredRegionIds.includes(muscleId);
+
+    if (meshUid === pickedMeshUid) {
+      mesh.material.color.set('#fde68a');
+      mesh.material.emissive.set('#f59e0b');
+      mesh.material.emissiveIntensity = 0.95;
+      mesh.material.opacity = 1;
+    } else if (meshUid === hoveredMeshUid) {
+      mesh.material.color.set('#fb7185');
+      mesh.material.emissive.set('#e11d48');
+      mesh.material.emissiveIntensity = 0.75;
+    } else if (inHoverRegion) {
+      mesh.material.emissive.set('#38bdf8');
+      mesh.material.emissiveIntensity = Math.max(mesh.material.emissiveIntensity, 0.55);
+    } else if (inPickedRegion) {
+      mesh.material.emissive.set('#f97316');
+      mesh.material.emissiveIntensity = Math.max(mesh.material.emissiveIntensity, 0.6);
+    }
+  });
+}
