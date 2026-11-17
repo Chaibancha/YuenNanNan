@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { MUSCLE_GROUPS, TRAINING_MODALITIES, MediaPreloader } from './WorkoutEngine.js';
 import { BiomechanicalVideoLoopEngine } from './ExerciseVideoEngine.js';
+import { computeSessionSummary } from './sessionSummary.js';
+
+export { computeSessionSummary, getCompletedStepIndexes, getTrainedMuscleIds } from './sessionSummary.js';
 
 const BREATH_CONFIG_BY_LEVEL = {
   beginner: { inhale: 4, hold: 2, exhale: 4 },
@@ -42,7 +45,11 @@ function drawShareCard9x16({ summary, trainedMuscleIds = [], streakDays = 0 }) {
   // Top Header Badge
   ctx.fillStyle = '#f97316';
   ctx.font = 'bold 16px sans-serif';
-  ctx.fillText('KINETIC MED-FIT 3D • WORKOUT COMPLETE', 42, 74);
+  ctx.fillText(
+    summary.credited === false ? 'KINETIC MED-FIT 3D • SESSION ENDED EARLY' : 'KINETIC MED-FIT 3D • WORKOUT COMPLETE',
+    42,
+    74
+  );
 
   ctx.fillStyle = '#ffffff';
   ctx.font = '800 34px sans-serif';
@@ -98,7 +105,11 @@ function drawShareCard9x16({ summary, trainedMuscleIds = [], streakDays = 0 }) {
   const boxes = [
     { label: 'DURATION', val: `${summary.durationMinutes} MIN`, color: '#f97316' },
     { label: 'BURNED', val: `${summary.estimatedKcal} KCAL`, color: '#10b981' },
-    { label: 'STREAK', val: `🔥 ${Math.max(1, streakDays)} DAYS`, color: '#fbbf24' }
+    {
+      label: 'STREAK',
+      val: `🔥 ${summary.credited === false ? Math.max(0, streakDays) : Math.max(1, streakDays)} DAYS`,
+      color: '#fbbf24'
+    }
   ];
 
   boxes.forEach((b, idx) => {
@@ -117,7 +128,12 @@ function drawShareCard9x16({ summary, trainedMuscleIds = [], streakDays = 0 }) {
 
   ctx.fillStyle = '#d4d4d8';
   ctx.font = 'bold 14px sans-serif';
-  ctx.fillText(`Trained ${trainedMuscleIds.length} Muscle Groups • Science-Based 3D Anatomy`, 42, 895);
+  const exerciseCount = Number(summary.workIntervals) || 0;
+  ctx.fillText(
+    `${exerciseCount} Exercises • Trained ${trainedMuscleIds.length} Muscle Groups • Science-Based 3D Anatomy`,
+    42,
+    895
+  );
 
   return canvas.toDataURL('image/png');
 }
@@ -177,9 +193,12 @@ export default function WorkoutPlayer({
   const lastTickRef = useRef(null);
   const accMsRef = useRef(0);
   const warned5SecStepRef = useRef(-1);
-  const completedStepIndicesRef = useRef(new Set());
+  // stepIndex -> seconds actually spent in that step (max across visits, capped to duration) — DEF-05
+  const stepElapsedRef = useRef({});
+  const remainingRef = useRef(schedule?.steps?.[0]?.duration || 40);
   const metronomeStateRef = useRef({ enabled: false, running: false });
   metronomeStateRef.current = { enabled: metronomeEnabled, running: isRunning };
+  remainingRef.current = remainingSec;
 
   const steps = schedule?.steps || [];
   const currentStep = steps[currentIndex] || steps[0];
@@ -238,7 +257,8 @@ export default function WorkoutPlayer({
     setBreathTick(0);
     accMsRef.current = 0;
     warned5SecStepRef.current = -1;
-    completedStepIndicesRef.current = new Set();
+    stepElapsedRef.current = {};
+    remainingRef.current = schedule?.steps?.[0]?.duration || 40;
     preloaderRef.current.preloadUpcomingSteps(schedule?.steps || [], 0, 3);
   }, [schedule]);
 
@@ -453,9 +473,15 @@ export default function WorkoutPlayer({
         accMsRef.current -= ticks * 1000;
 
         setRemainingSec(prev => {
-          if (prev - ticks > 0) return prev - ticks;
+          const curDur = steps[currentIndex]?.duration || 0;
+          if (prev - ticks > 0) {
+            const nextRem = prev - ticks;
+            const spent = Math.max(0, curDur - nextRem);
+            stepElapsedRef.current[currentIndex] = Math.max(stepElapsedRef.current[currentIndex] || 0, spent);
+            return nextRem;
+          }
 
-          completedStepIndicesRef.current.add(currentIndex);
+          stepElapsedRef.current[currentIndex] = curDur;
           const nextIdx = currentIndex + 1;
           if (nextIdx < steps.length) {
             const upcoming = steps[nextIdx];
@@ -487,23 +513,40 @@ export default function WorkoutPlayer({
             setFocusMode(false);
             playTone(1046.5, 500, 'triangle', 0.3);
             triggerHaptic([200, 100, 200]);
-            triggerVisualAlert('COOLDOWN', '🎉 จบโปรแกรมสมบูรณ์!', 'บันทึกสถิติและฟื้นฟูกล้ามเนื้อเรียบร้อย');
-            speakText('ยินดีด้วยครับ คุณออกกำลังกายครบตามเวลาเป้าหมายเรียบร้อยแล้ว');
 
-            const completedSteps = [...completedStepIndicesRef.current]
-              .map(i => steps[i])
-              .filter(Boolean);
-            const workCount = (completedSteps.length > 0 ? completedSteps : steps).filter(
-              s => s.type === 'WORK' || s.type === 'SPRINT'
-            ).length;
-            const summaryObj = {
-              durationMinutes: schedule.durationMinutes,
-              estimatedKcal: schedule.summary?.estimatedKcal || 0,
+            const computed = computeSessionSummary({
+              steps,
+              elapsedByStep: stepElapsedRef.current,
               modality: schedule.modality,
-              workIntervals: workCount
+              plannedMinutes: schedule.durationMinutes,
+              plannedKcal: schedule.summary?.estimatedKcal || 0
+            });
+
+            if (computed.credited) {
+              triggerVisualAlert('COOLDOWN', '🎉 จบโปรแกรมสมบูรณ์!', 'บันทึกสถิติและฟื้นฟูกล้ามเนื้อเรียบร้อย');
+              speakText('ยินดีด้วยครับ คุณออกกำลังกายครบตามเวลาเป้าหมายเรียบร้อยแล้ว');
+            } else {
+              triggerVisualAlert('REST', 'ℹ️ จบเซสชัน (ข้ามท่าฝึก)', 'ยังไม่มีท่าฝึกที่ทำครบเวลา จึงยังไม่นับสถิติสะสม');
+            }
+
+            const summaryObj = {
+              durationMinutes: computed.durationMinutes,
+              estimatedKcal: computed.estimatedKcal,
+              modality: schedule.modality,
+              workIntervals: computed.workCount,
+              trainedMuscleIds: computed.trainedMuscleIds,
+              credited: computed.credited,
+              actualSeconds: computed.actualSeconds
             };
             setCompletedSummary(summaryObj);
-            if (onWorkoutComplete) onWorkoutComplete(schedule, { completedSteps });
+            if (onWorkoutComplete) {
+              onWorkoutComplete(schedule, {
+                completedSteps: computed.completedSteps,
+                durationMinutes: computed.durationMinutes,
+                estimatedKcal: computed.estimatedKcal,
+                credited: computed.credited
+              });
+            }
             return 0;
           }
         });
@@ -515,8 +558,14 @@ export default function WorkoutPlayer({
 
   const handleSelectStep = idx => {
     if (idx < 0 || idx >= steps.length) return;
+    const curStep = steps[currentIndex];
+    if (curStep) {
+      const spent = Math.max(0, curStep.duration - remainingRef.current);
+      stepElapsedRef.current[currentIndex] = Math.max(stepElapsedRef.current[currentIndex] || 0, spent);
+    }
     setCurrentIndex(idx);
     setRemainingSec(steps[idx].duration);
+    remainingRef.current = steps[idx].duration;
     accMsRef.current = 0;
     warned5SecStepRef.current = -1;
     preloaderRef.current.preloadUpcomingSteps(steps, idx, 2);
@@ -528,9 +577,10 @@ export default function WorkoutPlayer({
     setSelectedRpe(null);
     setCurrentIndex(0);
     setRemainingSec(steps[0]?.duration || 40);
+    remainingRef.current = steps[0]?.duration || 40;
     accMsRef.current = 0;
     warned5SecStepRef.current = -1;
-    completedStepIndicesRef.current = new Set();
+    stepElapsedRef.current = {};
   };
 
   const formatClock = sec => {
@@ -544,8 +594,8 @@ export default function WorkoutPlayer({
     if (!completedSummary) return;
     const dataUrl = drawShareCard9x16({
       summary: completedSummary,
-      trainedMuscleIds: schedule?.selectedMuscles || [],
-      streakDays: streakDays + 1
+      trainedMuscleIds: completedSummary.trainedMuscleIds || [],
+      streakDays: completedSummary.credited === false ? streakDays : streakDays + 1
     });
     if (!dataUrl) return;
     const link = document.createElement('a');
@@ -597,9 +647,13 @@ export default function WorkoutPlayer({
 
   return (
     <div className="flex flex-col gap-5 pb-20 lg:pb-6">
-      {/* Floating Smart Toast */}
+      {/* Floating Smart Toast (Positioned at bottom so it never overlaps top header - DEF-13) */}
       {toastData && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[70] w-[92%] max-w-md pointer-events-none">
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-[70] w-[92%] max-w-md pointer-events-none"
+        >
           <div
             className={`px-4 py-3 rounded-2xl shadow-2xl border-2 backdrop-blur-md flex items-center gap-3 ${
               toastData.isRest ? 'bg-zinc-900/95 border-cyan-500 text-cyan-300' : 'bg-zinc-900/95 border-orange-500 text-orange-300'
@@ -709,17 +763,21 @@ export default function WorkoutPlayer({
         </div>
       </div>
 
-      {/* Post-Workout Summary Modal + 3-Level RPE Check-in + Shareable 9:16 Card (FEAT-04 / FEAT-06) */}
+      {/* Post-Workout Summary Modal + 3-Level RPE Check-in + Shareable 9:16 Card (FEAT-04 / FEAT-06 / DEF-05) */}
       {completedSummary && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-zinc-900 border-2 border-emerald-500/60 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
             <div className="text-center space-y-1">
               <span className="inline-block px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-xs font-extrabold text-emerald-400">
-                🎉 SESSION COMPLETE
+                {completedSummary.credited === false ? 'ℹ️ SESSION ENDED' : '🎉 SESSION COMPLETE'}
               </span>
-              <h3 className="text-2xl font-extrabold text-white mt-2">ยอดเยี่ยม! ฝึกจบครบเป้าหมายแล้ว</h3>
+              <h3 className="text-2xl font-extrabold text-white mt-2">
+                {completedSummary.credited === false ? 'จบเซสชันโดยยังไม่มีท่าฝึกครบเวลา' : 'ยอดเยี่ยม! ฝึกจบครบเป้าหมายแล้ว'}
+              </h3>
               <p className="text-xs text-zinc-400">
-                บันทึกเข้าสู่สถิติ JEFIT Recovery และ Streak อัตโนมัติ
+                {completedSummary.credited === false
+                  ? 'คุณข้ามท่าฝึกส่วนใหญ่ จึงยังไม่นับรวมเข้าสถิติสะสมและ Streak'
+                  : 'บันทึกเข้าสู่สถิติ JEFIT Recovery และ Streak อัตโนมัติ'}
               </p>
             </div>
 
@@ -734,25 +792,29 @@ export default function WorkoutPlayer({
               </div>
               <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3">
                 <p className="text-[11px] text-zinc-400">จำนวนท่าฝึก</p>
-                <p className="font-mono text-lg font-extrabold text-white">{completedSummary.workIntervals} รอบ</p>
+                <p className="font-mono text-lg font-extrabold text-white">{completedSummary.workIntervals} ท่า</p>
               </div>
             </div>
 
-            {/* Trained Muscles Badges */}
+            {/* Trained Muscles Badges (from actual completed WORK/SPRINT steps — DEF-05) */}
             <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 space-y-1.5">
               <p className="text-[11px] font-bold text-zinc-400">มัดกล้ามเนื้อที่ได้ฝึกในเซสชันนี้:</p>
               <div className="flex flex-wrap gap-1.5">
-                {(schedule?.selectedMuscles || []).slice(0, 8).map(mId => {
-                  const meta = MUSCLE_GROUPS.find(m => m.id === mId);
-                  return (
-                    <span
-                      key={mId}
-                      className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-zinc-900 border border-zinc-800 text-zinc-200"
-                    >
-                      {meta?.nameTh.split(' (')[0] || mId}
-                    </span>
-                  );
-                })}
+                {(completedSummary.trainedMuscleIds || []).length > 0 ? (
+                  (completedSummary.trainedMuscleIds || []).slice(0, 10).map(mId => {
+                    const meta = MUSCLE_GROUPS.find(m => m.id === mId);
+                    return (
+                      <span
+                        key={mId}
+                        className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-zinc-900 border border-zinc-800 text-zinc-200"
+                      >
+                        {meta?.nameTh.split(' (')[0] || mId}
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="text-xs text-zinc-400">ยังไม่มีท่าที่ฝึกครบในเซสชันนี้</span>
+                )}
               </div>
             </div>
 
@@ -897,76 +959,79 @@ export default function WorkoutPlayer({
             <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">{currentStep?.nameEn}</p>
           </div>
 
-          {/* LOOPING WORKOUT VIDEO + 7-MINUTE SVG RING TIMER */}
+          {/* LOOPING WORKOUT VIDEO + 7-MINUTE SVG RING TIMER (DEF-02: Unobstructed 16:10 canvas with controls placed below) */}
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-stretch flex-1">
-            {/* HTML5 Looping Video Stage + Safe Canvas Fallback (CR-004) */}
-            <div
-              className={`sm:col-span-7 relative rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800 flex flex-col justify-between ${
-                focusMode ? 'min-h-[320px] sm:min-h-[420px]' : 'min-h-[260px]'
-              }`}
-            >
-              <video
-                ref={videoElRef}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-contain bg-zinc-950 min-h-[260px]"
-              />
-              <canvas
-                ref={fallbackCanvasRef}
-                width={640}
-                height={390}
-                className="hidden w-full h-full object-contain bg-zinc-950 min-h-[260px]"
-              />
-
-              {/* Top Overlay Badges */}
-              <div className="absolute top-14 left-3 right-3 flex flex-wrap items-center justify-between gap-1.5 pointer-events-none">
-                <span
-                  className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-white shadow"
-                  style={{ backgroundColor: currentStep?.primaryMuscleColor || '#f97316' }}
-                >
-                  🎯 {currentStep?.primaryMuscleTh}
-                </span>
-                {remainingSec <= 5 && nextStep && (
-                  <span className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-500 text-zinc-950">
-                    {preloadedNextReady ? '⚡ วิดีโอท่าถัดไปพร้อมแล้ว' : '⏳ กำลังเตรียมท่าถัดไป...'}
-                  </span>
-                )}
+            {/* HTML5 Looping Video Stage + Safe Canvas Fallback (CR-004 / DEF-02) */}
+            <div className="sm:col-span-7 rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800 flex flex-col justify-between">
+              <div
+                className={`relative w-full aspect-[16/10] bg-zinc-950 flex items-center justify-center ${
+                  focusMode ? 'min-h-[300px] sm:min-h-[380px]' : 'min-h-[230px] sm:min-h-[260px]'
+                }`}
+              >
+                <video
+                  ref={videoElRef}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-contain bg-zinc-950"
+                />
+                <canvas
+                  ref={fallbackCanvasRef}
+                  width={800}
+                  height={488}
+                  className="hidden w-full h-full object-contain bg-zinc-950"
+                />
               </div>
 
-              {/* Video Speed & Camera Angle Bar (>=36px touch targets - CR-009) */}
-              <div className="relative sm:absolute sm:bottom-2.5 sm:left-2.5 sm:right-2.5 flex flex-wrap items-center justify-between gap-2 bg-zinc-950/90 backdrop-blur-md border-t sm:border border-zinc-800 sm:rounded-xl p-2">
-                <div className="flex items-center gap-1.5">
-                  {[0.5, 1.0, 1.5].map(sp => (
-                    <button
-                      key={sp}
-                      type="button"
-                      onClick={() => setVideoSpeed(sp)}
-                      className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition ${
-                        videoSpeed === sp ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-300'
-                      }`}
-                    >
-                      {sp}x
-                    </button>
-                  ))}
+              {/* Dedicated Footer Bar below the video frame so the 2D/photo athlete is never covered (DEF-02) */}
+              <div className="flex flex-col gap-2 bg-zinc-950 border-t border-zinc-800 p-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                  <span
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-white shadow"
+                    style={{ backgroundColor: currentStep?.primaryMuscleColor || '#f97316' }}
+                  >
+                    🎯 {currentStep?.primaryMuscleTh}
+                  </span>
+                  {remainingSec <= 5 && nextStep && (
+                    <span className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-500 text-zinc-950">
+                      {preloadedNextReady ? '⚡ วิดีโอท่าถัดไปพร้อมแล้ว' : '⏳ กำลังเตรียมท่าถัดไป...'}
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center gap-1.5">
-                  {[
-                    { id: 'side', label: 'ข้าง (Side)' },
-                    { id: 'front', label: 'หน้า (Front)' }
-                  ].map(ang => (
-                    <button
-                      key={ang.id}
-                      type="button"
-                      onClick={() => setVideoAngle(ang.id)}
-                      className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                        videoAngle === ang.id ? 'bg-cyan-500 text-zinc-950' : 'bg-zinc-800 text-zinc-300'
-                      }`}
-                    >
-                      {ang.label}
-                    </button>
-                  ))}
+
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    {[0.5, 1.0, 1.5].map(sp => (
+                      <button
+                        key={sp}
+                        type="button"
+                        onClick={() => setVideoSpeed(sp)}
+                        className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition ${
+                          videoSpeed === sp ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-300'
+                        }`}
+                      >
+                        {sp}x
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {[
+                      { id: 'side', label: 'ข้าง (Side)' },
+                      { id: 'front', label: 'หน้า (Front)' }
+                    ].map(ang => (
+                      <button
+                        key={ang.id}
+                        type="button"
+                        onClick={() => setVideoAngle(ang.id)}
+                        className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                          videoAngle === ang.id ? 'bg-cyan-500 text-zinc-950' : 'bg-zinc-800 text-zinc-300'
+                        }`}
+                      >
+                        {ang.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1175,10 +1240,10 @@ export default function WorkoutPlayer({
                     <span className="font-mono text-[11px] text-zinc-500 w-10 shrink-0">
                       {formatClock(step.startTimeSec)}
                     </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span
-                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
                             step.type === 'REST'
                               ? 'bg-cyan-500/15 text-cyan-300'
                               : step.type === 'WARMUP'
@@ -1190,9 +1255,9 @@ export default function WorkoutPlayer({
                         >
                           {step.roundLabel}
                         </span>
-                        <span className="text-[10px] text-zinc-400 truncate">{step.primaryMuscleTh.split(' (')[0]}</span>
+                        <span className="text-[10px] text-zinc-400 leading-tight">{step.primaryMuscleTh.split(' (')[0]}</span>
                       </div>
-                      <p className="text-xs font-bold text-zinc-100 truncate mt-0.5">{step.nameTh}</p>
+                      <p className="text-xs font-bold text-zinc-100 line-clamp-2 leading-snug break-words mt-0.5">{step.nameTh}</p>
                     </div>
                   </button>
 

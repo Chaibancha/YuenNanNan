@@ -1004,7 +1004,7 @@ export const SEVEN_DAY_CHALLENGE = [
   },
   {
     day: 6,
-    titleTh: 'วันที่ 6: REHIT เร่งความฟิตหัวใจและVO2max',
+    titleTh: 'วันที่ 6: REHIT เร่งความฟิตหัวใจและ VO2max',
     subtitleTh: '15 นาที • สปรินต์ระยะสั้นสลับฟื้นตัวแบบวิทยาศาสตร์',
     isFullBody: false,
     selectedMuscles: ['quads', 'glutes', 'abs_rectus', 'serratus_obliques'],
@@ -1160,6 +1160,234 @@ function isExerciseJointSafe(exercise, injuredJoints = []) {
   return !load.some(joint => injuredJoints.includes(joint));
 }
 
+export function isExerciseEquipmentCompatible(exercise, selectedEquipment = ['bodyweight']) {
+  const activeEquip = Array.isArray(selectedEquipment) && selectedEquipment.length > 0 ? selectedEquipment : ['bodyweight'];
+  const eqList = Array.isArray(exercise?.equipment) && exercise.equipment.length > 0 ? exercise.equipment : ['bodyweight'];
+  return eqList.some(eq => activeEquip.includes(eq));
+}
+
+/**
+ * ปรับชื่อท่า คำแนะนำ และอุปกรณ์ที่ใช้จริง (equipmentUsed + videoKinematics.equipRender)
+ * ให้ตรงกับอุปกรณ์ที่ผู้ใช้เลือกจริง 100% (DEF-03: ไม่กล่าวถึงอุปกรณ์ที่ไม่ได้เลือก)
+ */
+export function resolveExerciseForEquipment(exercise, selectedEquipment = ['bodyweight']) {
+  if (!exercise) return exercise;
+  const activeEquip = Array.isArray(selectedEquipment) && selectedEquipment.length > 0 ? selectedEquipment : ['bodyweight'];
+  const has = eq => activeEquip.includes(eq);
+  const matched = (exercise.equipment || ['bodyweight']).filter(eq => has(eq));
+  const equipmentUsed = matched.length > 0 ? matched : [activeEquip[0] || 'bodyweight'];
+
+  let nameTh = exercise.nameTh;
+  let nameEn = exercise.nameEn;
+  let formCues = exercise.formCues;
+  let equipRender = exercise.videoKinematics?.equipRender || equipmentUsed[0] || 'bodyweight';
+
+  if (! matched.includes(equipRender)) {
+    equipRender = equipmentUsed[0] || 'bodyweight';
+  }
+
+  switch (exercise.id) {
+    case 'ex_band_face_pull':
+      if (!has('band')) {
+        nameTh = 'กางแขนบีบสะบักเปิดไหล่หลังและบ่า (Rear Delt Fly)';
+        nameEn = 'Bodyweight Rear Delt Fly & Scapular Squeeze';
+        formCues = 'โน้มตัวเล็กน้อยหรือยืนตรง กางแขนเปิดหัวไหล่ออกด้านนอก บีบสะบักค้าง 1 วินาทีแล้วคลายช้าๆ';
+        equipRender = 'bodyweight';
+      } else {
+        equipRender = 'band';
+      }
+      break;
+
+    case 'ex_db_bench_press':
+      if (has('bench') && has('barbell')) {
+        nameTh = 'บาร์เบลเบนช์เพรสบนม้านั่งสร้างกล้ามเนื้ออก';
+        nameEn = 'Barbell Chest Bench Press';
+        formCues = 'บีบสะบักติดม้านั่ง กดไหล่ลง ดันบาร์เบลขึ้นเหนืออกกลางโดยทำมุมข้อศอก 45 องศา';
+        equipRender = 'bench_barbell';
+      } else if (has('bench') && has('dumbbell')) {
+        nameTh = 'ดัมเบลเบนช์เพรสบนม้านั่งสร้างกล้ามเนื้ออก';
+        nameEn = 'Dumbbell Chest Bench Press';
+        formCues = 'บีบสะบักติดม้านั่ง กดไหล่ลง ดันดัมเบลขึ้นเหนืออกกลางโดยทำมุมข้อศอก 45 องศา';
+        equipRender = 'dumbbell';
+      } else if (has('dumbbell')) {
+        nameTh = 'ดัมเบลฟลอร์เพรสดันอกบนพื้น (Floor Press)';
+        nameEn = 'Dumbbell Floor Chest Press';
+        formCues = 'นอนหงายบนพื้น บีบสะบัก กดไหล่ลง ดันดัมเบลขึ้นเหนืออกกลางโดยทำมุมข้อศอก 45 องศา';
+        equipRender = 'dumbbell';
+      } else if (has('barbell')) {
+        nameTh = 'บาร์เบลฟลอร์เพรสดันอกบนพื้น (Floor Press)';
+        nameEn = 'Barbell Floor Chest Press';
+        formCues = 'นอนหงายบนพื้น บีบสะบัก กดไหล่ลง ดันบาร์เบลขึ้นเหนืออกกลางอย่างควบคุม';
+        equipRender = 'barbell';
+      } else {
+        nameTh = 'วิดพื้นยกระดับสร้างกล้ามเนื้ออก';
+        nameEn = 'Incline Chest Push-Up';
+        formCues = 'เกร็งลำตัวตรง บีบสะบัก ลดอกลงอย่างควบคุมแล้วออกแรงอกดันตัวขึ้น';
+        equipRender = has('bench') ? 'bench' : 'bodyweight';
+      }
+      break;
+
+    case 'ex_kb_high_pull_traps':
+      if (has('kettlebell')) {
+        nameTh = 'เคตเทิลเบลไฮพูลสร้างบ่าและไหล่หลัง';
+        nameEn = 'Kettlebell Upright High-Pull';
+        equipRender = 'kettlebell';
+      } else if (has('barbell')) {
+        nameTh = 'บาร์เบลไฮพูลสร้างบ่าและไหล่หลัง';
+        nameEn = 'Barbell Upright High-Pull';
+        equipRender = 'barbell';
+      } else {
+        nameTh = 'ดัมเบลไฮพูลสร้างบ่าและไหล่หลัง';
+        nameEn = 'Dumbbell Upright High-Pull';
+        equipRender = 'dumbbell';
+      }
+      break;
+
+    case 'ex_db_renegade_row':
+      if (has('dumbbell')) {
+        nameTh = 'ดึงดัมเบลโรว์สร้างปีกหลังหนา';
+        nameEn = 'Dumbbell Power Row';
+        equipRender = 'dumbbell';
+      } else if (has('barbell')) {
+        nameTh = 'ดึงบาร์เบลโรว์สร้างปีกหลังหนา';
+        nameEn = 'Barbell Power Row';
+        equipRender = 'barbell';
+      } else if (has('kettlebell')) {
+        nameTh = 'ดึงเคตเทิลเบลโรว์สร้างปีกหลังหนา';
+        nameEn = 'Kettlebell Power Row';
+        equipRender = 'kettlebell';
+      } else {
+        nameTh = 'ดึงยางยืดโรว์สร้างปีกหลังหนา';
+        nameEn = 'Resistance Band Power Row';
+        equipRender = 'band';
+      }
+      break;
+
+    case 'ex_db_hammer_curl_tempo':
+      if (has('dumbbell')) {
+        nameTh = 'ดัมเบลแฮมเมอร์เคิร์ลปั้นหน้าแขนและบราคิอาลิส';
+        nameEn = 'Alternating Dumbbell Hammer Curl';
+        equipRender = 'dumbbell';
+      } else if (has('band')) {
+        nameTh = 'ยางยืดเคิร์ลปั้นหน้าแขนและบราคิอาลิส';
+        nameEn = 'Resistance Band Bicep Curl';
+        equipRender = 'band';
+      } else if (has('barbell')) {
+        nameTh = 'บาร์เบลเคิร์ลปั้นหน้าแขนและบราคิอาลิส';
+        nameEn = 'Barbell Bicep Curl';
+        equipRender = 'barbell';
+      } else {
+        nameTh = 'เคตเทิลเบลแฮมเมอร์เคิร์ลปั้นหน้าแขนและบราคิอาลิส';
+        nameEn = 'Kettlebell Hammer Curl';
+        equipRender = 'kettlebell';
+      }
+      break;
+
+    case 'ex_bench_tricep_dips':
+      if (has('bench')) {
+        nameTh = 'ดิปส์หลังแขน 3 หัวกับม้านั่ง';
+        nameEn = 'Bench Tricep Dips';
+        formCues = 'วางมือบนขอบม้านั่ง หุบศอกชิดลำตัว ลดสะโพกลงจนต้นแขนขนานพื้นแล้วดันขึ้นสุด';
+        equipRender = 'bench';
+      } else {
+        nameTh = 'ดิปส์หลังแขน 3 หัวบนพื้น (Floor Tricep Dips)';
+        nameEn = 'Floor Tricep Dips';
+        formCues = 'วางฝ่ามือบนพื้นด้านหลังสะโพก หุบศอกชิดลำตัว งอศอกลดสะโพกลงแล้วออกแรงหลังแขนดันขึ้นสุด';
+        equipRender = has('yoga_block') ? 'yoga_block' : 'bodyweight';
+      }
+      break;
+
+    case 'ex_kb_russian_swing':
+      if (has('kettlebell')) {
+        nameTh = 'สวิงเคตเทิลเบลระเบิดพลังสะโพกและก้น';
+        nameEn = 'Explosive Kettlebell Hip-Hinge Swing';
+        equipRender = 'kettlebell';
+      } else {
+        nameTh = 'สวิงดัมเบลระเบิดพลังสะโพกและก้น (Dumbbell Swing)';
+        nameEn = 'Explosive Dumbbell Hip-Hinge Swing';
+        equipRender = 'dumbbell';
+      }
+      break;
+
+    case 'ex_db_push_press':
+      if (has('dumbbell')) {
+        nameTh = 'ดัมเบลพุชเพรสดันไหล่ระเบิดพลัง';
+        nameEn = 'Dumbbell Explosive Push Press';
+        equipRender = 'dumbbell';
+      } else {
+        nameTh = 'เคตเทิลเบลพุชเพรสดันไหล่ระเบิดพลัง';
+        nameEn = 'Kettlebell Explosive Push Press';
+        equipRender = 'kettlebell';
+      }
+      break;
+
+    case 'ex_db_thruster_explode':
+      if (has('dumbbell')) {
+        nameTh = 'ดัมเบลสควอททรัสเตอร์ระเบิดพลังขาหน้าและทั่วร่าง';
+        nameEn = 'Full-Depth Dumbbell Squat Thruster';
+        equipRender = 'dumbbell';
+      } else if (has('kettlebell')) {
+        nameTh = 'เคตเทิลเบลสควอททรัสเตอร์ระเบิดพลังขาหน้าและทั่วร่าง';
+        nameEn = 'Full-Depth Kettlebell Squat Thruster';
+        equipRender = 'kettlebell';
+      } else {
+        nameTh = 'บาร์เบลสควอททรัสเตอร์ระเบิดพลังขาหน้าและทั่วร่าง';
+        nameEn = 'Full-Depth Barbell Squat Thruster';
+        equipRender = 'barbell';
+      }
+      break;
+
+    case 'ex_rdl_hinge':
+      if (has('dumbbell')) {
+        nameTh = 'ดัมเบลโรมาเนียนเดดลิฟต์สร้างต้นขาด้านหลังและก้น';
+        nameEn = 'Dumbbell Romanian Deadlift (RDL)';
+        equipRender = 'dumbbell';
+      } else if (has('barbell')) {
+        nameTh = 'บาร์เบลโรมาเนียนเดดลิฟต์สร้างต้นขาด้านหลังและก้น';
+        nameEn = 'Barbell Romanian Deadlift (RDL)';
+        equipRender = 'barbell';
+      } else if (has('kettlebell')) {
+        nameTh = 'เคตเทิลเบลโรมาเนียนเดดลิฟต์สร้างต้นขาด้านหลังและก้น';
+        nameEn = 'Kettlebell Romanian Deadlift (RDL)';
+        equipRender = 'kettlebell';
+      } else {
+        nameTh = 'ยางยืดโรมาเนียนเดดลิฟต์สร้างต้นขาด้านหลังและก้น';
+        nameEn = 'Resistance Band Romanian Deadlift (RDL)';
+        equipRender = 'band';
+      }
+      break;
+
+    case 'ex_yoga_navasana_boat':
+      if (!has('yoga_block')) {
+        formCues = 'นั่งทรงตัวบนกระดูกก้น ยกขาทำมุม 45 องศา เปิดอกยืดหลังตรง เกร็งหน้าท้องลึก หายใจลึกสม่ำเสมอ';
+        equipRender = has('yoga_mat') ? 'yoga_mat' : 'bodyweight';
+      }
+      break;
+
+    case 'ex_yoga_pigeon_warrior_lunge':
+      if (!has('yoga_block')) {
+        formCues = 'ก้าวยาวเปิดข้อพับสะโพกหน้า-หลัง วางมือประคองหน้าขาหรือชูแขนเหนือศีรษะ หายใจลึกเข้า-ออก';
+        equipRender = has('yoga_mat') ? 'yoga_mat' : 'bodyweight';
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  return {
+    ...exercise,
+    nameTh,
+    nameEn,
+    formCues,
+    equipmentUsed,
+    videoKinematics: {
+      ...(exercise.videoKinematics || { poseType: 'squat', tempoSec: 1.5, rangeDeg: 80 }),
+      equipRender
+    }
+  };
+}
+
 /**
  * อัลกอริทึมจัดตารางฝึกตามกรอบเวลาที่แม่นยำ 100% รองรับ HIIT / REHIT / CARDIO / YOGA / 7MIN
  * รองรับ Low-Impact Filter, Joint Injury Filter และคำนวณแคลอรีตาม Phase MET + น้ำหนักจริง
@@ -1186,9 +1414,10 @@ export function generateTimeBoundedSchedule({
   const activeInjuredJoints = Array.isArray(injuredJoints) ? injuredJoints : [];
   let jointFilterFallbackUsed = false;
 
+  // Primary pool: matches primary muscle + selected equipment + impact + joint safety + modality
   let candidatePool = EXERCISE_DATABASE.filter(ex => {
     const matchMuscle = activeMuscles.includes(ex.primaryMuscle);
-    const matchEquip = ex.equipment.some(eq => activeEquip.includes(eq));
+    const matchEquip = isExerciseEquipmentCompatible(ex, activeEquip);
     const matchImpact = !lowImpactOnly || ex.lowImpact;
     const matchJoints = isExerciseJointSafe(ex, activeInjuredJoints);
     const matchModality = modality === 'YOGA'
@@ -1197,45 +1426,67 @@ export function generateTimeBoundedSchedule({
     return matchMuscle && matchEquip && matchImpact && matchJoints && matchModality;
   });
 
-  // Fallback ขั้น 1: คงการป้องกันข้อต่อบาดเจ็บไว้ แต่ผ่อนปรนเงื่อนไขอุปกรณ์/โหมด
-  if (candidatePool.length < 3) {
-    const relaxPool = EXERCISE_DATABASE.filter(ex => {
-      const matchMuscle = activeMuscles.includes(ex.primaryMuscle);
+  // Variety supplement (DEF-06): if primary matches < 8, add secondary-muscle or compatible exercises
+  // that STILL strictly respect activeEquip, joint safety, and low-impact
+  if (candidatePool.length < 8) {
+    const secondaryPool = EXERCISE_DATABASE.filter(ex => {
+      const matchSecondary = (ex.secondaryMuscles || []).some(m => activeMuscles.includes(m));
+      const matchEquip = isExerciseEquipmentCompatible(ex, activeEquip);
       const matchImpact = !lowImpactOnly || ex.lowImpact;
       const matchJoints = isExerciseJointSafe(ex, activeInjuredJoints);
-      const matchEquip = ex.equipment.includes('bodyweight') || ex.equipment.includes('yoga_mat') || ex.equipment.some(eq => activeEquip.includes(eq));
-      return matchMuscle && matchImpact && matchJoints && matchEquip;
+      const matchModality = modality === 'YOGA' ? ex.supportedModalities.includes('YOGA') : true;
+      return matchSecondary && matchEquip && matchImpact && matchJoints && matchModality;
     });
-    candidatePool = [...new Map([...candidatePool, ...relaxPool].map(item => [item.id, item])).values()];
-  }
-  // Fallback ขั้น 2: เปิดทุกมัดที่ปลอดภัยต่อข้อต่อที่บาดเจ็บ
-  if (candidatePool.length < 2) {
-    const safeAnyMuscle = EXERCISE_DATABASE.filter(
-      ex => (!lowImpactOnly || ex.lowImpact) && isExerciseJointSafe(ex, activeInjuredJoints)
-    );
-    candidatePool = [...new Map([...candidatePool, ...safeAnyMuscle].map(item => [item.id, item])).values()];
-  }
-  // Fallback ขั้น 3: กรณีบาดเจ็บหลายข้อต่อพร้อมกันจนไม่มีท่าตรงเงื่อนไข
-  if (candidatePool.length < 2) {
-    jointFilterFallbackUsed = activeInjuredJoints.length > 0;
-    candidatePool = EXERCISE_DATABASE.filter(ex => !lowImpactOnly || ex.lowImpact);
+    candidatePool = [...new Map([...candidatePool, ...secondaryPool].map(item => [item.id, item])).values()];
   }
 
-  const orderedExercises = orderExercisesScientifically(candidatePool, activeMuscles);
+  // Fallback ขั้น 1: คงอุปกรณ์ที่เลือกและความปลอดภัยข้อต่อไว้ แต่ผ่อนปรนเงื่อนไขโหมด YOGA/กล้ามเนื้อ
+  if (candidatePool.length < 6) {
+    const equipSafePool = EXERCISE_DATABASE.filter(ex => {
+      const matchEquip = isExerciseEquipmentCompatible(ex, activeEquip);
+      const matchImpact = !lowImpactOnly || ex.lowImpact;
+      const matchJoints = isExerciseJointSafe(ex, activeInjuredJoints);
+      return matchEquip && matchImpact && matchJoints;
+    });
+    candidatePool = [...new Map([...candidatePool, ...equipSafePool].map(item => [item.id, item])).values()];
+  }
+
+  // Fallback ขั้น 2: คงอุปกรณ์ที่เลือกและข้อต่อไว้ (ผ่อนปรน lowImpact เฉพาะเมื่อจำเป็นจริงๆ)
+  if (candidatePool.length < 2) {
+    const equipJointOnly = EXERCISE_DATABASE.filter(
+      ex => isExerciseEquipmentCompatible(ex, activeEquip) && isExerciseJointSafe(ex, activeInjuredJoints)
+    );
+    candidatePool = [...new Map([...candidatePool, ...equipJointOnly].map(item => [item.id, item])).values()];
+  }
+
+  // Fallback ขั้น 3: กรณีบาดเจ็บหลายข้อต่อและเลือกอุปกรณ์เฉพาะทางเดียว (เช่น bike)
+  if (candidatePool.length < 1) {
+    const equipOnly = EXERCISE_DATABASE.filter(ex => isExerciseEquipmentCompatible(ex, activeEquip));
+    if (equipOnly.length > 0) {
+      jointFilterFallbackUsed = activeInjuredJoints.length > 0;
+      candidatePool = equipOnly;
+    } else {
+      jointFilterFallbackUsed = activeInjuredJoints.length > 0;
+      candidatePool = EXERCISE_DATABASE.filter(ex => ex.equipment.includes('bodyweight'));
+    }
+  }
+
+  const resolvedPool = candidatePool.map(ex => resolveExerciseForEquipment(ex, activeEquip));
+  const orderedExercises = orderExercisesScientifically(resolvedPool, activeMuscles);
 
   const steps = [];
   let stepCounter = 1;
 
   // กำหนด Warm-up & Cool-down ตามความยาวรวม (รองรับ 7 นาทีจนถึง 45 นาที)
   const warmupTotalSec = totalSeconds <= 450 ? 40 : totalSeconds <= 600 ? 80 : totalSeconds <= 1200 ? 120 : 180;
-  const cooldownTotalSec = totalSeconds <= 450 ? 40 : totalSeconds <= 600 ? 60 : totalSeconds <= 1200 ? 90 : 120;
-  const mainBlockSec = totalSeconds - warmupTotalSec - cooldownTotalSec;
+  const cooldownBaseSec = totalSeconds <= 450 ? 40 : totalSeconds <= 600 ? 60 : totalSeconds <= 1200 ? 90 : 120;
+  const mainBlockSec = totalSeconds - warmupTotalSec - cooldownBaseSec;
 
   const wu1Sec = Math.floor(warmupTotalSec / 2);
   const wu2Sec = warmupTotalSec - wu1Sec;
   [
-    { ex: WARMUP_EXERCISES[0], dur: wu1Sec, label: modality === 'YOGA' ? 'PRANAYAMA WARM-UP 1/2' : 'WARM-UP 1/2' },
-    { ex: WARMUP_EXERCISES[1], dur: wu2Sec, label: modality === 'YOGA' ? 'MOBILITY FLOW 2/2' : 'WARM-UP 2/2' }
+    { ex: resolveExerciseForEquipment(WARMUP_EXERCISES[0], activeEquip), dur: wu1Sec, label: modality === 'YOGA' ? 'PRANAYAMA WARM-UP 1/2' : 'WARM-UP 1/2' },
+    { ex: resolveExerciseForEquipment(WARMUP_EXERCISES[1], activeEquip), dur: wu2Sec, label: modality === 'YOGA' ? 'MOBILITY FLOW 2/2' : 'WARM-UP 2/2' }
   ].forEach(item => {
     steps.push(createStepObject(stepCounter++, 'WARMUP', item.ex, item.dur, item.label, {
       fitnessLevel,
@@ -1250,11 +1501,15 @@ export function generateTimeBoundedSchedule({
     const usableSprintPool = sprintPool.length > 0 ? sprintPool : orderedExercises;
 
     const cycleSec = proto.sprintSec + proto.recoverySec;
-    const numSprints = Math.max(2, Math.floor(mainBlockSec / cycleSec));
+    const numSprints = Math.max(2, Math.floor((mainBlockSec + proto.recoverySec) / cycleSec));
     let remainingMainSec = mainBlockSec;
 
-    const primerSec = Math.min(45, Math.floor(remainingMainSec * 0.14));
-    if (primerSec >= 20 && remainingMainSec - primerSec >= numSprints * proto.sprintSec + 40) {
+    const totalSprintSec = numSprints * proto.sprintSec;
+    const numRecoveries = Math.max(1, numSprints - 1);
+    const primerBudget = remainingMainSec - totalSprintSec - numRecoveries * proto.recoverySec;
+    const primerSec = primerBudget >= 20 ? Math.min(60, primerBudget) : 0;
+
+    if (primerSec >= 20) {
       const primerEx = orderedExercises[0];
       steps.push(
         createStepObject(stepCounter++, 'WORK', {
@@ -1265,6 +1520,10 @@ export function generateTimeBoundedSchedule({
       );
       remainingMainSec -= primerSec;
     }
+
+    const totalRecBudget = Math.max(0, remainingMainSec - numSprints * proto.sprintSec);
+    const baseRecSec = numRecoveries > 0 ? Math.floor(totalRecBudget / numRecoveries) : 0;
+    const extraRecSec = numRecoveries > 0 ? totalRecBudget - baseRecSec * numRecoveries : 0;
 
     for (let s = 0; s < numSprints && remainingMainSec > 0; s++) {
       const sprintEx = usableSprintPool[s % usableSprintPool.length];
@@ -1285,12 +1544,9 @@ export function generateTimeBoundedSchedule({
       );
       remainingMainSec -= currentSprintSec;
 
-      if (remainingMainSec > 0) {
-        const sprintsLeftAfter = numSprints - (s + 1);
-        const recoverySec = sprintsLeftAfter > 0
-          ? Math.min(proto.recoverySec, Math.max(10, remainingMainSec - sprintsLeftAfter * proto.sprintSec))
-          : remainingMainSec;
-
+      // Only place Active Recovery BETWEEN sprints (no dangling recovery right before Cool-Down)
+      if (s < numSprints - 1 && remainingMainSec > 0) {
+        const recoverySec = Math.min(remainingMainSec, baseRecSec + (s < extraRecSec ? 1 : 0));
         if (recoverySec > 0) {
           const recEx = orderedExercises[(s + 1) % orderedExercises.length];
           steps.push(
@@ -1304,7 +1560,7 @@ export function generateTimeBoundedSchedule({
                 formCues: 'เคลื่อนไหวช้าๆ หายใจเข้าทางจมูกยาวๆ เพื่อฟื้นฟู ATP-PCr และระบายกรดแลคติก'
               },
               recoverySec,
-              `RECOVERY ${s + 1}/${numSprints}`,
+              `RECOVERY ${s + 1}/${numSprints - 1}`,
               { fitnessLevel, modality, selectedEquipment: activeEquip }
             )
           );
@@ -1316,15 +1572,21 @@ export function generateTimeBoundedSchedule({
     const modConfig = TRAINING_MODALITIES[modality] || TRAINING_MODALITIES.HIIT;
     const proto = modConfig.protocolsByLevel[fitnessLevel] || modConfig.protocolsByLevel.intermediate;
     const cycleSec = proto.workSec + proto.restSec;
-    const totalIntervals = Math.max(1, Math.floor(mainBlockSec / cycleSec));
+    // N work intervals + (N - 1) rest intervals fit cleanly inside mainBlockSec with no trailing REST before COOLDOWN (DEF-04)
+    const totalIntervals = Math.max(1, Math.round((mainBlockSec + proto.restSec) / cycleSec));
     const exercisesPerRound = Math.min(orderedExercises.length, Math.max(3, Math.min(8, totalIntervals)));
-    let remainingMainSec = mainBlockSec;
 
-    for (let i = 0; i < totalIntervals && remainingMainSec > 0; i++) {
+    const totalRestCount = Math.max(0, totalIntervals - 1);
+    const totalRestSec = totalRestCount * proto.restSec;
+    const totalWorkBudget = Math.max(totalIntervals * 15, mainBlockSec - totalRestSec);
+    const baseWorkSec = Math.floor(totalWorkBudget / totalIntervals);
+    const extraWorkRemainder = totalWorkBudget - baseWorkSec * totalIntervals;
+
+    for (let i = 0; i < totalIntervals; i++) {
       const ex = orderedExercises[i % orderedExercises.length];
       const roundNum = Math.floor(i / exercisesPerRound) + 1;
       const totalRounds = Math.ceil(totalIntervals / exercisesPerRound);
-      const workSec = Math.min(proto.workSec, remainingMainSec);
+      const workSec = baseWorkSec + (i < extraWorkRemainder ? 1 : 0);
 
       const roundLabel = modality === 'YOGA'
         ? `ASANA FLOW ${i + 1}/${totalIntervals}`
@@ -1339,11 +1601,9 @@ export function generateTimeBoundedSchedule({
           selectedEquipment: activeEquip
         })
       );
-      remainingMainSec -= workSec;
 
-      if (remainingMainSec > 0) {
-        const isLast = i === totalIntervals - 1;
-        const restSec = isLast ? remainingMainSec : Math.min(proto.restSec, remainingMainSec);
+      // Only insert REST between work steps (never after the final work step before COOLDOWN — DEF-04)
+      if (i < totalIntervals - 1 && proto.restSec > 0) {
         const nextEx = orderedExercises[(i + 1) % orderedExercises.length];
         steps.push(
           createStepObject(
@@ -1360,12 +1620,11 @@ export function generateTimeBoundedSchedule({
                 ? `หายใจออกยาว ผ่อนคลายหัวไหล่ แล้วค่อยๆ จัดตำแหน่งร่างกายสำหรับ ${nextEx.nameTh}`
                 : `สูดหายใจเข้าลึกทางจมูก เตรียมพร้อมสำหรับท่า ${nextEx.nameTh}`
             },
-            restSec,
+            proto.restSec,
             modality === 'YOGA' ? `BREATH ${i + 1}` : `REST ${i + 1}`,
             { fitnessLevel, modality, selectedEquipment: activeEquip }
           )
         );
-        remainingMainSec -= restSec;
       }
     }
   }
@@ -1377,7 +1636,7 @@ export function generateTimeBoundedSchedule({
     createStepObject(
       stepCounter++,
       'COOLDOWN',
-      COOLDOWN_EXERCISES[0],
+      resolveExerciseForEquipment(COOLDOWN_EXERCISES[0], activeEquip),
       exactCooldownSec,
       modality === 'YOGA' ? 'SAVASANA & RECOVERY' : 'COOL-DOWN & RECOVERY',
       { fitnessLevel, modality, selectedEquipment: activeEquip }
@@ -1436,32 +1695,41 @@ function orderExercisesScientifically(pool, activeMuscles) {
     }
     roundIdx++;
   }
+  // Append any remaining secondary/supplemental exercises from pool so variety is maximized (DEF-06)
+  for (const ex of pool) {
+    if (!result.some(r => r.id === ex.id)) {
+      result.push(ex);
+    }
+  }
   return result.length > 0 ? result : [...pool];
 }
 
 function createStepObject(stepNumber, phaseType, exercise, durationSec, roundLabel, options) {
-  const promptData = buildRealisticMediaPrompt(exercise, options);
-  const muscleMeta = MUSCLE_GROUPS.find(m => m.id === exercise.primaryMuscle) || MUSCLE_GROUPS[0];
+  const activeEquip = options?.selectedEquipment || ['bodyweight'];
+  const resolved = exercise.equipmentUsed ? exercise : resolveExerciseForEquipment(exercise, activeEquip);
+  const promptData = buildRealisticMediaPrompt(resolved, options);
+  const muscleMeta = MUSCLE_GROUPS.find(m => m.id === resolved.primaryMuscle) || MUSCLE_GROUPS[0];
   return {
-    id: exercise.id || `step_${stepNumber}`,
+    id: resolved.id || `step_${stepNumber}`,
     stepNumber,
     type: phaseType,
-    exerciseId: exercise.id,
-    nameTh: exercise.nameTh,
-    nameEn: exercise.nameEn,
-    primaryMuscle: exercise.primaryMuscle,
+    exerciseId: resolved.id,
+    nameTh: resolved.nameTh,
+    nameEn: resolved.nameEn,
+    primaryMuscle: resolved.primaryMuscle,
     primaryMuscleTh: muscleMeta.nameTh,
     primaryMuscleColor: muscleMeta.color,
-    secondaryMuscles: exercise.secondaryMuscles || [],
-    equipment: exercise.equipment || ['bodyweight'],
-    lowImpact: Boolean(exercise.lowImpact),
-    jointLoad: inferJointLoad(exercise),
-    emgActivation: exercise.emgActivation || { [exercise.primaryMuscle]: 85 },
-    videoKinematics: exercise.videoKinematics || { poseType: 'squat', tempoSec: 1.5, equipRender: 'bodyweight', rangeDeg: 80 },
+    secondaryMuscles: resolved.secondaryMuscles || [],
+    equipment: resolved.equipment || ['bodyweight'],
+    equipmentUsed: resolved.equipmentUsed || [activeEquip[0] || 'bodyweight'],
+    lowImpact: Boolean(resolved.lowImpact),
+    jointLoad: inferJointLoad(resolved),
+    emgActivation: resolved.emgActivation || { [resolved.primaryMuscle]: 85 },
+    videoKinematics: resolved.videoKinematics || { poseType: 'squat', tempoSec: 1.5, equipRender: 'bodyweight', rangeDeg: 80 },
     duration: durationSec,
     roundLabel,
-    formCues: exercise.formCues,
-    mediaUrl: exercise.mediaUrl,
+    formCues: resolved.formCues,
+    mediaUrl: resolved.mediaUrl,
     aiPrompt: promptData
   };
 }
@@ -1512,39 +1780,58 @@ export function swapExerciseInSchedule(schedule, stepIndex) {
   }
 
   const injuredJoints = schedule.injuredJoints || [];
+  const activeEquip = schedule.selectedEquipment?.length > 0 ? schedule.selectedEquipment : ['bodyweight'];
 
-  const sameMusclePool = EXERCISE_DATABASE.filter(
+  // Collect exerciseIds in the same round (or nearby work steps) so Swap avoids duplicates in the same round (DEF-06)
+  const roundPrefix = String(targetStep.roundLabel || '').split('•')[0].trim();
+  const sameRoundIds = new Set(
+    schedule.steps
+      .filter((s, idx) => idx !== stepIndex && (s.type === 'WORK' || s.type === 'SPRINT'))
+      .filter(s => {
+        if (roundPrefix && String(s.roundLabel || '').startsWith(roundPrefix)) return true;
+        return Math.abs((s.index ?? 0) - stepIndex) <= 4;
+      })
+      .map(s => s.exerciseId)
+  );
+  const allScheduleIds = new Set(
+    schedule.steps.filter((s, idx) => idx !== stepIndex && (s.type === 'WORK' || s.type === 'SPRINT')).map(s => s.exerciseId)
+  );
+
+  // Strict equipment + joint safety filter for all swap pools (DEF-03)
+  const equipJointSafePool = EXERCISE_DATABASE.filter(
     ex =>
       ex.id !== targetStep.exerciseId &&
-      ex.primaryMuscle === targetStep.primaryMuscle &&
       (!schedule.lowImpactOnly || ex.lowImpact) &&
       isExerciseJointSafe(ex, injuredJoints) &&
-      ex.equipment.some(eq => schedule.selectedEquipment.includes(eq))
+      isExerciseEquipmentCompatible(ex, activeEquip)
   );
 
-  const broaderPool = EXERCISE_DATABASE.filter(
-    ex =>
-      ex.id !== targetStep.exerciseId &&
-      (!schedule.lowImpactOnly || ex.lowImpact) &&
-      isExerciseJointSafe(ex, injuredJoints) &&
-      schedule.selectedMuscles.includes(ex.primaryMuscle) &&
-      ex.equipment.some(eq => schedule.selectedEquipment.includes(eq))
+  const sameMuscleFresh = equipJointSafePool.filter(
+    ex => ex.primaryMuscle === targetStep.primaryMuscle && !sameRoundIds.has(ex.id)
   );
-
-  const safeFallbackPool = EXERCISE_DATABASE.filter(
-    ex => ex.id !== targetStep.exerciseId && isExerciseJointSafe(ex, injuredJoints)
+  const selectedMusclesFresh = equipJointSafePool.filter(
+    ex => schedule.selectedMuscles.includes(ex.primaryMuscle) && !allScheduleIds.has(ex.id)
   );
-  const anyFallbackPool = EXERCISE_DATABASE.filter(ex => ex.id !== targetStep.exerciseId);
+  const selectedMusclesNoRoundDup = equipJointSafePool.filter(
+    ex => schedule.selectedMuscles.includes(ex.primaryMuscle) && !sameRoundIds.has(ex.id)
+  );
+  const anyEquipSafeNoRoundDup = equipJointSafePool.filter(ex => !sameRoundIds.has(ex.id));
 
   const pool =
-    sameMusclePool.length > 0
-      ? sameMusclePool
-      : broaderPool.length > 0
-      ? broaderPool
-      : safeFallbackPool.length > 0
-      ? safeFallbackPool
-      : anyFallbackPool;
-  const replacement = pool[Math.floor(Math.random() * pool.length)];
+    sameMuscleFresh.length > 0
+      ? sameMuscleFresh
+      : selectedMusclesFresh.length > 0
+      ? selectedMusclesFresh
+      : selectedMusclesNoRoundDup.length > 0
+      ? selectedMusclesNoRoundDup
+      : anyEquipSafeNoRoundDup.length > 0
+      ? anyEquipSafeNoRoundDup
+      : equipJointSafePool;
+
+  if (pool.length === 0) return schedule;
+
+  const rawReplacement = pool[Math.floor(Math.random() * pool.length)];
+  const replacement = resolveExerciseForEquipment(rawReplacement, activeEquip);
 
   const newStep = createStepObject(
     targetStep.stepNumber,
@@ -1555,7 +1842,7 @@ export function swapExerciseInSchedule(schedule, stepIndex) {
     {
       fitnessLevel: schedule.fitnessLevel,
       modality: schedule.modality,
-      selectedEquipment: schedule.selectedEquipment
+      selectedEquipment: activeEquip
     }
   );
 
@@ -1573,16 +1860,18 @@ export function swapExerciseInSchedule(schedule, stepIndex) {
       if (idx === stepIndex - 1 && st.type === 'REST' && schedule.modality !== 'REHIT') {
         return {
           ...st,
-          nameEn: schedule.modality === 'YOGA' ? `Mindful Transition → ${replacement.nameEn}` : `Rest & Prepare → ${replacement.nameEn}`,
-          nameTh: schedule.modality === 'YOGA' ? `ปรับลมหายใจเข้าสู่ท่า: ${replacement.nameTh}` : `พัก & เตรียมท่าถัดไป: ${replacement.nameTh}`,
+          nameEn: schedule.modality === 'YOGA' ? `Mindful Transition → ${newStep.nameEn}` : `Rest & Prepare → ${newStep.nameEn}`,
+          nameTh: schedule.modality === 'YOGA' ? `ปรับลมหายใจเข้าสู่ท่า: ${newStep.nameTh}` : `พัก & เตรียมท่าถัดไป: ${newStep.nameTh}`,
           formCues: schedule.modality === 'YOGA'
-            ? `หายใจออกยาว ผ่อนคลายหัวไหล่ แล้วค่อยๆ จัดตำแหน่งร่างกายสำหรับ ${replacement.nameTh}`
-            : `สูดหายใจเข้าลึกทางจมูก เตรียมพร้อมสำหรับท่า ${replacement.nameTh}`,
-          primaryMuscle: replacement.primaryMuscle,
+            ? `หายใจออกยาว ผ่อนคลายหัวไหล่ แล้วค่อยๆ จัดตำแหน่งร่างกายสำหรับ ${newStep.nameTh}`
+            : `สูดหายใจเข้าลึกทางจมูก เตรียมพร้อมสำหรับท่า ${newStep.nameTh}`,
+          primaryMuscle: newStep.primaryMuscle,
           primaryMuscleTh: newStep.primaryMuscleTh,
           primaryMuscleColor: newStep.primaryMuscleColor,
-          videoKinematics: replacement.videoKinematics,
-          mediaUrl: replacement.mediaUrl,
+          equipment: newStep.equipment,
+          equipmentUsed: newStep.equipmentUsed,
+          videoKinematics: newStep.videoKinematics,
+          mediaUrl: newStep.mediaUrl,
           aiPrompt: newStep.aiPrompt
         };
       }
@@ -1688,14 +1977,21 @@ function persistWorkoutStats(stats) {
 
 export function logCompletedWorkoutSession(schedule, options = {}) {
   const current = loadWorkoutStats();
+  if (options.credited === false) {
+    return current;
+  }
   const nextFatigue = { ...(current.muscleFatigue || {}) };
   const nowTs = options.timestamp || Date.now();
   const dateStr = options.dateStr || getLocalDateStr(nowTs);
 
-  const stepsSource =
-    Array.isArray(options.completedSteps) && options.completedSteps.length > 0
-      ? options.completedSteps
-      : (schedule.steps || []).filter(s => s.type === 'WORK' || s.type === 'SPRINT');
+  const hasExplicitCompleted = Array.isArray(options.completedSteps);
+  const stepsSource = hasExplicitCompleted
+    ? options.completedSteps.filter(s => s && (s.type === 'WORK' || s.type === 'SPRINT'))
+    : (schedule.steps || []).filter(s => s.type === 'WORK' || s.type === 'SPRINT');
+
+  if (hasExplicitCompleted && stepsSource.length === 0) {
+    return current;
+  }
 
   const modalityFactor =
     schedule.modality === 'YOGA' ? 1.8 : schedule.modality === 'REHIT' ? 9.5 : schedule.modality === 'HIIT' ? 6.5 : 5.2;
@@ -1709,7 +2005,7 @@ export function logCompletedWorkoutSession(schedule, options = {}) {
     });
   });
 
-  if (Object.keys(muscleLoad).length === 0) {
+  if (Object.keys(muscleLoad).length === 0 && !hasExplicitCompleted) {
     (schedule.selectedMuscles || []).forEach(mId => {
       muscleLoad[mId] = Math.max(3, (schedule.durationMinutes || 7) * 0.8);
     });
@@ -1727,12 +2023,15 @@ export function logCompletedWorkoutSession(schedule, options = {}) {
   const nextDates = [...new Set([...(current.workoutDates || []), dateStr])];
   const streak = computeStreakMetrics(nextDates, nowTs);
 
+  const creditedMinutes = options.durationMinutes !== undefined ? Number(options.durationMinutes) || 0 : schedule.durationMinutes || 0;
+  const creditedKcal = options.estimatedKcal !== undefined ? Number(options.estimatedKcal) || 0 : schedule.summary?.estimatedKcal || 0;
+
   const nextRpe = [...(current.recentRpe || [])];
   if (options.rpe) {
     nextRpe.push({
       date: dateStr,
       modality: schedule.modality,
-      durationMin: schedule.durationMinutes,
+      durationMin: creditedMinutes,
       rpe: options.rpe
     });
   }
@@ -1743,8 +2042,8 @@ export function logCompletedWorkoutSession(schedule, options = {}) {
 
   const updated = {
     totalSessions: (current.totalSessions || 0) + 1,
-    totalMinutes: (current.totalMinutes || 0) + (schedule.durationMinutes || 0),
-    totalKcal: (current.totalKcal || 0) + (schedule.summary?.estimatedKcal || 0),
+    totalMinutes: (current.totalMinutes || 0) + creditedMinutes,
+    totalKcal: (current.totalKcal || 0) + creditedKcal,
     lastModality: schedule.modality,
     workoutDates: nextDates,
     currentStreakDays: streak.currentStreakDays,

@@ -18,6 +18,15 @@ import {
   getMuscleRecoveryPercent,
   pickSmartRecoveredMuscles
 } from './WorkoutEngine.js';
+import {
+  validateProfileField,
+  shouldShowDevUi,
+  resolveDurationOnModalityChange,
+  stashAfterManualDuration,
+  getStepChip,
+  getStepEquipmentLabels,
+  getMuscleShortName
+} from './profileValidation.js';
 
 /**
  * ============================================================================
@@ -30,8 +39,29 @@ import {
  */
 export default function App() {
   const [userProfile, setUserProfile] = useState(() => loadUserProfile());
+  const [profileDraft, setProfileDraft] = useState(() => {
+    const p = loadUserProfile();
+    return {
+      weightKg: String(p.weightKg),
+      heightCm: String(p.heightCm),
+      age: String(p.age),
+      weeklyGoalDays: String(p.weeklyGoalDays)
+    };
+  });
+  const [profileErrors, setProfileErrors] = useState({});
+  const [profileSavedAt, setProfileSavedAt] = useState(null);
   const [showProfileDrawer, setShowProfileDrawer] = useState(false);
   const [showGoalPresets, setShowGoalPresets] = useState(true);
+  const [showSchedulePreview, setShowSchedulePreview] = useState(false);
+  const [pre7MinDurationStash, setPre7MinDurationStash] = useState(null);
+  const showDevToggle = useMemo(
+    () =>
+      shouldShowDevUi(
+        typeof window !== 'undefined' ? window.location.search : '',
+        typeof window !== 'undefined' ? window.localStorage : null
+      ),
+    []
+  );
 
   const [selectedMuscles, setSelectedMuscles] = useState([
     'chest_upper_Mid',
@@ -138,14 +168,16 @@ export default function App() {
     [hasActiveSession]
   );
 
-  // CR-009: If Full Body is active and user clicks 1 muscle, isolate ONLY that muscle
+  // CR-009 / DEF-08: If Full Body is active and user clicks 1 muscle, isolate ONLY that muscle and show feedback toast
   const handleToggleMuscle = useCallback(
     muscleId => {
+      const shortName = getMuscleShortName(muscleId, MUSCLE_GROUPS);
       if (isFullBody) {
-        guardScheduleChange(`เปลี่ยนเป้าหมายเป็นเฉพาะ ${muscleId}`, () => {
+        guardScheduleChange(`เปลี่ยนเป้าหมายเป็นเฉพาะ ${shortName}`, () => {
           setActiveChallengeDay(null);
           setIsFullBody(false);
           setSelectedMuscles([muscleId]);
+          showToastMessage(`เลือกเฉพาะ ${shortName} แล้ว • กด ทั่วร่างกาย เพื่อกลับ`);
         });
         return;
       }
@@ -219,6 +251,22 @@ export default function App() {
   const updateProfileField = patch => {
     const next = saveUserProfile({ ...userProfile, ...patch });
     setUserProfile(next);
+    setProfileSavedAt(Date.now());
+  };
+
+  const handleProfileInputChange = (field, rawValue) => {
+    setProfileDraft(prev => ({ ...prev, [field]: rawValue }));
+    const check = validateProfileField(field, rawValue);
+    if (!check.valid) {
+      setProfileErrors(prev => ({ ...prev, [field]: check.error }));
+      return;
+    }
+    setProfileErrors(prev => {
+      const nextErr = { ...prev };
+      delete nextErr[field];
+      return nextErr;
+    });
+    updateProfileField({ [field]: check.value });
   };
 
   const toggleInjuredJoint = jointId => {
@@ -300,7 +348,10 @@ export default function App() {
     (completedSched, details = {}) => {
       const updated = logCompletedWorkoutSession(completedSched, {
         completedSteps: details.completedSteps,
-        completedChallengeDay: activeChallengeDay
+        durationMinutes: details.durationMinutes,
+        estimatedKcal: details.estimatedKcal,
+        credited: details.credited,
+        completedChallengeDay: details.credited === false ? null : activeChallengeDay
       });
       setWorkoutStats(updated);
       setActiveChallengeDay(null);
@@ -323,9 +374,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans pb-20 lg:pb-6">
-      {/* App-level Toast (minimum selection guard, smart pick, etc.) */}
+      {/* App-level Toast (Positioned at bottom so it never overlaps top header - DEF-12 / DEF-13) */}
       {appToast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[75] w-[92%] max-w-md pointer-events-none">
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-[75] w-[92%] max-w-md pointer-events-none"
+        >
           <div className="bg-zinc-900/95 backdrop-blur-md border-2 border-amber-500 px-4 py-3 rounded-2xl shadow-2xl text-sm font-bold text-amber-200 text-center">
             {appToast}
           </div>
@@ -465,60 +520,112 @@ export default function App() {
                 </span>
                 <h2 className="text-base font-extrabold text-white">ข้อมูลร่างกายและตัวกรองป้องกันข้อต่อบาดเจ็บ</h2>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowProfileDrawer(false)}
-                className="min-h-[36px] px-3 py-1 rounded-xl bg-zinc-800 text-xs font-bold text-zinc-300"
-              >
-                ✕ ปิด
-              </button>
+              <div className="flex items-center gap-2">
+                {profileSavedAt && Object.keys(profileErrors).length === 0 && (
+                  <span role="status" aria-live="polite" className="text-[11px] font-bold text-emerald-400">
+                    บันทึกอัตโนมัติแล้ว ✓
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowProfileDrawer(false)}
+                  aria-label="ปิดหน้าต่างข้อมูลร่างกาย"
+                  className="min-h-[38px] px-3 py-1 rounded-xl bg-zinc-800 text-xs font-bold text-zinc-300"
+                >
+                  ✕ ปิด
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <label className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
-                <span className="text-zinc-400 font-bold">น้ำหนักตัว (kg)</span>
+              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
+                <label htmlFor="profile-weight-kg" className="block text-zinc-400 font-bold">
+                  น้ำหนักตัว (kg)
+                </label>
                 <input
+                  id="profile-weight-kg"
                   type="number"
                   min={35}
                   max={200}
-                  value={userProfile.weightKg}
-                  onChange={e => updateProfileField({ weightKg: Number(e.target.value) })}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-2.5 py-1.5 font-mono font-bold text-white"
+                  value={profileDraft.weightKg}
+                  aria-invalid={Boolean(profileErrors.weightKg)}
+                  onChange={e => handleProfileInputChange('weightKg', e.target.value)}
+                  className={`w-full bg-zinc-900 border rounded-xl px-2.5 py-1.5 font-mono font-bold text-white ${
+                    profileErrors.weightKg ? 'border-rose-500' : 'border-zinc-700'
+                  }`}
                 />
-              </label>
-              <label className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
-                <span className="text-zinc-400 font-bold">ส่วนสูง (cm)</span>
+                {profileErrors.weightKg && (
+                  <p role="alert" className="text-[11px] text-rose-400 leading-snug">
+                    {profileErrors.weightKg}
+                  </p>
+                )}
+              </div>
+              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
+                <label htmlFor="profile-height-cm" className="block text-zinc-400 font-bold">
+                  ส่วนสูง (cm)
+                </label>
                 <input
+                  id="profile-height-cm"
                   type="number"
                   min={120}
                   max={230}
-                  value={userProfile.heightCm}
-                  onChange={e => updateProfileField({ heightCm: Number(e.target.value) })}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-2.5 py-1.5 font-mono font-bold text-white"
+                  value={profileDraft.heightCm}
+                  aria-invalid={Boolean(profileErrors.heightCm)}
+                  onChange={e => handleProfileInputChange('heightCm', e.target.value)}
+                  className={`w-full bg-zinc-900 border rounded-xl px-2.5 py-1.5 font-mono font-bold text-white ${
+                    profileErrors.heightCm ? 'border-rose-500' : 'border-zinc-700'
+                  }`}
                 />
-              </label>
-              <label className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
-                <span className="text-zinc-400 font-bold">อายุ (ปี)</span>
+                {profileErrors.heightCm && (
+                  <p role="alert" className="text-[11px] text-rose-400 leading-snug">
+                    {profileErrors.heightCm}
+                  </p>
+                )}
+              </div>
+              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
+                <label htmlFor="profile-age-years" className="block text-zinc-400 font-bold">
+                  อายุ (ปี)
+                </label>
                 <input
+                  id="profile-age-years"
                   type="number"
                   min={12}
                   max={100}
-                  value={userProfile.age}
-                  onChange={e => updateProfileField({ age: Number(e.target.value) })}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-2.5 py-1.5 font-mono font-bold text-white"
+                  value={profileDraft.age}
+                  aria-invalid={Boolean(profileErrors.age)}
+                  onChange={e => handleProfileInputChange('age', e.target.value)}
+                  className={`w-full bg-zinc-900 border rounded-xl px-2.5 py-1.5 font-mono font-bold text-white ${
+                    profileErrors.age ? 'border-rose-500' : 'border-zinc-700'
+                  }`}
                 />
-              </label>
-              <label className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
-                <span className="text-zinc-400 font-bold">เป้าหมายสัปดาห์ (วัน)</span>
+                {profileErrors.age && (
+                  <p role="alert" className="text-[11px] text-rose-400 leading-snug">
+                    {profileErrors.age}
+                  </p>
+                )}
+              </div>
+              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
+                <label htmlFor="profile-weekly-goal" className="block text-zinc-400 font-bold">
+                  เป้าหมายสัปดาห์ (วัน)
+                </label>
                 <input
+                  id="profile-weekly-goal"
                   type="number"
                   min={1}
                   max={7}
-                  value={userProfile.weeklyGoalDays}
-                  onChange={e => updateProfileField({ weeklyGoalDays: Number(e.target.value) })}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-2.5 py-1.5 font-mono font-bold text-white"
+                  value={profileDraft.weeklyGoalDays}
+                  aria-invalid={Boolean(profileErrors.weeklyGoalDays)}
+                  onChange={e => handleProfileInputChange('weeklyGoalDays', e.target.value)}
+                  className={`w-full bg-zinc-900 border rounded-xl px-2.5 py-1.5 font-mono font-bold text-white ${
+                    profileErrors.weeklyGoalDays ? 'border-rose-500' : 'border-zinc-700'
+                  }`}
                 />
-              </label>
+                {profileErrors.weeklyGoalDays && (
+                  <p role="alert" className="text-[11px] text-rose-400 leading-snug">
+                    {profileErrors.weeklyGoalDays}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -532,6 +639,7 @@ export default function App() {
                     <button
                       key={joint.id}
                       type="button"
+                      aria-pressed={selected}
                       onClick={() => toggleInjuredJoint(joint.id)}
                       className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
                         selected
@@ -543,17 +651,19 @@ export default function App() {
                     </button>
                   );
                 })}
-                <button
-                  type="button"
-                  onClick={() => updateProfileField({ developerMode: !userProfile.developerMode })}
-                  className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-bold border transition ml-auto ${
-                    userProfile.developerMode
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                      : 'bg-zinc-950 text-zinc-500 border-zinc-800'
-                  }`}
-                >
-                  🛠️ Dev AI Prompts: {userProfile.developerMode ? 'ON' : 'OFF'}
-                </button>
+                {showDevToggle && (
+                  <button
+                    type="button"
+                    onClick={() => updateProfileField({ developerMode: !userProfile.developerMode })}
+                    className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-bold border transition ml-auto ${
+                      userProfile.developerMode
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                        : 'bg-zinc-950 text-zinc-500 border-zinc-800'
+                    }`}
+                  >
+                    🛠️ Dev AI Prompts: {userProfile.developerMode ? 'ON' : 'OFF'}
+                  </button>
+                )}
               </div>
             </div>
           </section>
@@ -688,8 +798,15 @@ export default function App() {
                           type="button"
                           onClick={() =>
                             guardScheduleChange(`เปลี่ยนรูปแบบเป็น ${mod.id}`, () => {
+                              const resolved = resolveDurationOnModalityChange({
+                                modality,
+                                duration: durationMinutes,
+                                stash: pre7MinDurationStash,
+                                next: mod.id
+                              });
                               setModality(mod.id);
-                              if (mod.id === '7MIN') setDurationMinutes(7);
+                              setDurationMinutes(resolved.duration);
+                              setPre7MinDurationStash(resolved.stash);
                             })
                           }
                           className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
@@ -714,11 +831,13 @@ export default function App() {
                     })}
                   </div>
 
-                  {/* Level & Duration */}
+                  {/* Level & Duration (DEF-12: accessible group roles + aria-labelledby + htmlFor) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-zinc-400 mb-1.5">ระดับความฟิต:</label>
-                      <div className="grid grid-cols-3 gap-1.5">
+                      <span id="fitness-level-label" className="block text-xs font-bold text-zinc-400 mb-1.5">
+                        ระดับความฟิต:
+                      </span>
+                      <div role="group" aria-labelledby="fitness-level-label" className="grid grid-cols-3 gap-1.5">
                         {[
                           { id: 'beginner', label: 'ผู้เริ่มต้น' },
                           { id: 'intermediate', label: 'ปานกลาง' },
@@ -727,6 +846,7 @@ export default function App() {
                           <button
                             key={lv.id}
                             type="button"
+                            aria-pressed={fitnessLevel === lv.id}
                             onClick={() => guardScheduleChange(`ปรับระดับความฟิตเป็น ${lv.label}`, () => setFitnessLevel(lv.id))}
                             className={`min-h-[38px] py-2 px-2 rounded-xl text-xs font-bold border transition ${
                               fitnessLevel === lv.id
@@ -741,13 +861,21 @@ export default function App() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-zinc-400 mb-1.5">เวลาเป้าหมาย (นาที):</label>
-                      <div className="grid grid-cols-6 gap-1">
+                      <span id="target-duration-label" className="block text-xs font-bold text-zinc-400 mb-1.5">
+                        เวลาเป้าหมาย (นาที):
+                      </span>
+                      <div role="group" aria-labelledby="target-duration-label" className="grid grid-cols-6 gap-1">
                         {[7, 10, 15, 20, 30, 45].map(mins => (
                           <button
                             key={mins}
                             type="button"
-                            onClick={() => guardScheduleChange(`เปลี่ยนเวลาเป้าหมายเป็น ${mins} นาที`, () => setDurationMinutes(mins))}
+                            aria-pressed={durationMinutes === mins}
+                            onClick={() =>
+                              guardScheduleChange(`เปลี่ยนเวลาเป้าหมายเป็น ${mins} นาที`, () => {
+                                setDurationMinutes(mins);
+                                setPre7MinDurationStash(stashAfterManualDuration());
+                              })
+                            }
                             className={`min-h-[38px] py-2 rounded-xl text-xs font-mono font-extrabold border transition ${
                               durationMinutes === mins
                                 ? 'bg-orange-500 text-white border-orange-400'
@@ -762,7 +890,7 @@ export default function App() {
                   </div>
                 </section>
 
-                {/* Schedule Summary Launch */}
+                {/* Schedule Summary Launch + Collapsible Step Preview (DEF-14b) */}
                 <section className="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-4 sm:p-5 flex flex-col gap-3">
                   {schedule.jointFilterFallbackUsed && (
                     <p className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
@@ -775,20 +903,70 @@ export default function App() {
                         Exact Time-Bounded Schedule ({schedule.totalSeconds} วินาที • น้ำหนักอ้างอิง {userProfile.weightKg} kg)
                       </span>
                       <h3 className="text-base font-extrabold text-white">
-                        ตาราง {schedule.durationMinutes} นาที • ~{schedule.summary.estimatedKcal} kcal ({schedule.summary.burnRatePerMin} kcal/นาที)
+                        ตาราง {schedule.durationMinutes} นาที • ~{schedule.summary.estimatedKcal} kcal ({schedule.summary.burnRatePerMin} kcal/นาที • {schedule.summary.workIntervals} ท่าฝึก)
                       </h3>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveTab('workout');
-                        setMobileSection('workout');
-                      }}
-                      className="min-h-[44px] w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-sm shadow-lg shadow-orange-500/25"
-                    >
-                      ▶ เข้าสู่โหมดวิดีโอฝึกจริง
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={() => setShowSchedulePreview(v => !v)}
+                        className="min-h-[44px] px-3.5 py-2.5 rounded-2xl bg-zinc-950 border border-zinc-700 hover:border-zinc-500 text-xs font-extrabold text-zinc-200"
+                      >
+                        👀 ดูตัวอย่างท่าในตาราง ({schedule.steps.length} ช่วง) {showSchedulePreview ? '▲' : '▼'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab('workout');
+                          setMobileSection('workout');
+                        }}
+                        className="min-h-[44px] flex-1 sm:flex-initial px-5 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-extrabold text-sm shadow-lg shadow-orange-500/25"
+                      >
+                        ▶ เข้าสู่โหมดวิดีโอฝึกจริง
+                      </button>
+                    </div>
                   </div>
+
+                  {showSchedulePreview && (
+                    <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1 pt-2 border-t border-zinc-800">
+                      {schedule.steps.map((st, idx) => {
+                        const chip = getStepChip(st.type);
+                        const eqLabels = getStepEquipmentLabels(st, EQUIPMENT_CATALOG);
+                        return (
+                          <div
+                            key={`${st.stepNumber}-${idx}`}
+                            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-zinc-950/90 border border-zinc-800/80 text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span className="font-mono text-[10px] text-zinc-500 w-5 shrink-0">{idx + 1}.</span>
+                              <span
+                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                                  st.type === 'REST'
+                                    ? 'bg-cyan-500/15 text-cyan-300'
+                                    : st.type === 'WARMUP'
+                                    ? 'bg-amber-500/20 text-amber-300'
+                                    : st.type === 'COOLDOWN'
+                                    ? 'bg-emerald-500/20 text-emerald-300'
+                                    : 'bg-orange-500/20 text-orange-300'
+                                }`}
+                              >
+                                {chip.label}
+                              </span>
+                              <span className="font-bold text-zinc-100 line-clamp-1">{st.nameTh}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {eqLabels.length > 0 && (
+                                <span className="hidden sm:inline text-[10px] text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
+                                  {eqLabels.join(', ')}
+                                </span>
+                              )}
+                              <span className="font-mono text-[11px] font-bold text-orange-300">{st.duration}s</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </section>
               </div>
             </div>

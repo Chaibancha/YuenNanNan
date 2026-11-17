@@ -22,6 +22,20 @@ import {
  * โหมด Ecorché เลือกได้ 2 ระดับ: "ส่วนของร่างกาย" (Region) และ "มัดกล้ามเนื้อเดี่ยว" (Muscle)
  * ============================================================================
  */
+const ENGINE_MODE_STORAGE_KEY = 'kinetic_3d_engine_mode';
+const BIODIGITAL_LOAD_TIMEOUT_MS = 8000;
+
+function readInitialEngineMode() {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'ecorche';
+    const saved = window.localStorage.getItem(ENGINE_MODE_STORAGE_KEY);
+    if (saved === 'ecorche' || saved === 'biodigital') return saved;
+  } catch {}
+  return 'biodigital';
+}
+
+const NO_SCROLLBAR = '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+
 export default function Body3DSelector({
   selectedMuscles = [],
   isFullBody = false,
@@ -72,7 +86,36 @@ export default function Body3DSelector({
     else ids.forEach(id => onToggleMuscleRef.current?.(id));
   };
 
-  const [engineMode, setEngineMode] = useState('biodigital'); // 'biodigital' | 'ecorche'
+  // ค่าเริ่มต้น: ออฟไลน์ → Ecorché, ไม่เช่นนั้นใช้ตัวเลือกล่าสุดจาก localStorage (ถ้าไม่มี → biodigital)
+  const [engineMode, setEngineModeState] = useState(readInitialEngineMode); // 'biodigital' | 'ecorche'
+  const setEngineMode = mode => {
+    setEngineModeState(mode);
+    try {
+      window.localStorage.setItem(ENGINE_MODE_STORAGE_KEY, mode);
+    } catch {}
+  };
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [iframeFailed, setIframeFailed] = useState(false);
+  const [iframeKey, setIframeKey] = useState(0);
+  const [hint, setHint] = useState(null); // { kind: 'min1' | 'exitFull', id }
+  const hintTimerRef = useRef(null);
+  const showHintRef = useRef(null);
+  showHintRef.current = kind => {
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    setHint({ kind, id: Date.now() });
+    hintTimerRef.current = setTimeout(() => setHint(null), 2000);
+  };
+  // ตรวจว่าการกดมัดนี้เป็น no-op (มัดสุดท้ายที่เลือก) หรือออกจากโหมดทั่วร่างกาย → แสดง hint ในพื้นที่
+  const hintForMuscleClickRef = useRef(null);
+  hintForMuscleClickRef.current = muscleId => {
+    if (isFullBodyRef.current) {
+      showHintRef.current?.('exitFull');
+    } else if (selectedMusclesRef.current.length === 1 && selectedMusclesRef.current[0] === muscleId) {
+      showHintRef.current?.('min1');
+    }
+  };
+  useEffect(() => () => hintTimerRef.current && clearTimeout(hintTimerRef.current), []);
+
   const [toolMode, setToolMode] = useState('select'); // 'select' | 'dissect' | 'isolate'
   const [orbitLocked, setOrbitLocked] = useState(false);
   const [dissectedMeshIds, setDissectedMeshIds] = useState([]);
@@ -86,6 +129,23 @@ export default function Body3DSelector({
   const bridgeRef = useRef(null);
 
   toolModeRef.current = toolMode;
+
+  // โหลด BioDigital iframe: ถ้าไม่ onLoad ภายใน ~8 วินาที (หรือออฟไลน์) → แสดง fallback
+  useEffect(() => {
+    if (engineMode !== 'biodigital' || iframeLoaded) return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      setIframeFailed(true);
+      return;
+    }
+    const t = setTimeout(() => setIframeFailed(true), BIODIGITAL_LOAD_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [engineMode, iframeLoaded, iframeKey]);
+
+  const retryBioDigital = () => {
+    setIframeLoaded(false);
+    setIframeFailed(false);
+    setIframeKey(k => k + 1);
+  };
 
   useEffect(() => {
     if (controlsRef.current) {
@@ -236,6 +296,7 @@ export default function Body3DSelector({
               if (region) selectRegionRef.current?.(region.id);
             } else {
               setPickedRegionId(null);
+              hintForMuscleClickRef.current?.(hitData.muscleId);
               onToggleMuscleRef.current?.(hitData.muscleId);
             }
           }
@@ -390,7 +451,7 @@ export default function Body3DSelector({
         <button
           type="button"
           onClick={onToggleFullBody}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
+          className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
             isFullBody
               ? 'bg-orange-500 text-white border-orange-400 shadow-lg shadow-orange-500/25'
               : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:border-zinc-500'
@@ -406,7 +467,7 @@ export default function Body3DSelector({
         <button
           type="button"
           onClick={() => setEngineMode('biodigital')}
-          className={`py-2 px-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition ${
+          className={`min-h-[40px] py-2 px-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition ${
             engineMode === 'biodigital' ? 'bg-orange-500 text-white shadow' : 'text-zinc-400 hover:text-white'
           }`}
         >
@@ -415,7 +476,7 @@ export default function Body3DSelector({
         <button
           type="button"
           onClick={() => setEngineMode('ecorche')}
-          className={`py-2 px-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition ${
+          className={`min-h-[40px] py-2 px-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition ${
             engineMode === 'ecorche' ? 'bg-orange-500 text-white shadow' : 'text-zinc-400 hover:text-white'
           }`}
         >
@@ -425,15 +486,71 @@ export default function Body3DSelector({
 
       {/* ENGINE 1: Official BioDigital × MSD Manual Muscular System Viewer */}
       <div className={engineMode === 'biodigital' ? 'flex flex-col gap-2.5' : 'hidden'}>
-        <div className="relative w-full h-[430px] sm:h-[470px] rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800">
+        {/* กล่องครอบ iframe: isolate + contain:paint + clip-path กัน compositing layer ของหน้าที่สามรั่วออกนอกกรอบ */}
+        <div
+          className="relative z-0 isolate w-full h-[430px] sm:h-[470px] rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800"
+          style={{ contain: 'paint', isolation: 'isolate', clipPath: 'inset(0 round 1rem)' }}
+        >
           <iframe
+            key={iframeKey}
             id="biodigital-msd-iframe"
             title="MSD Manual & BioDigital Human 3D Muscular System"
             src={BIODIGITAL_MSD_EMBED_URL}
-            className="w-full h-full border-0"
+            className="absolute inset-0 z-0 w-full h-full border-0"
             allow="fullscreen; xr-spatial-tracking"
-            loading="lazy"
+            onLoad={() => {
+              setIframeLoaded(true);
+              setIframeFailed(false);
+            }}
+            onError={() => setIframeFailed(true)}
           />
+
+          {!iframeLoaded && !iframeFailed && (
+            <div
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-zinc-950"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="w-10 h-10 rounded-full border-2 border-orange-500/30 border-t-orange-400 animate-spin" />
+              <span className="text-xs font-bold text-zinc-300">กำลังโหลดโมเดล BioDigital…</span>
+              <div className="w-40 h-2 rounded-full bg-zinc-800 animate-pulse" />
+              <div className="w-28 h-2 rounded-full bg-zinc-800 animate-pulse" />
+            </div>
+          )}
+
+          {iframeFailed && !iframeLoaded && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-zinc-950 px-5 text-center">
+              <span className="text-3xl">📡</span>
+              <p className="text-sm font-extrabold text-white">โหลดโมเดล BioDigital ไม่สำเร็จ</p>
+              <p className="text-[11px] text-zinc-400 leading-snug max-w-xs">
+                หน้า BioDigital ต้องใช้อินเทอร์เน็ตและอาจโหลดช้า คุณสามารถใช้โมเดล Ecorché 3D ที่ทำงานออฟไลน์ได้แทน
+              </p>
+              <button
+                type="button"
+                onClick={() => setEngineMode('ecorche')}
+                className="min-h-[40px] px-4 py-2 rounded-xl text-xs font-extrabold bg-orange-500 text-white shadow-lg shadow-orange-500/25 hover:bg-orange-400 transition"
+              >
+                สลับไปโมเดล Ecorché 3D (ใช้งานออฟไลน์ได้)
+              </button>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={retryBioDigital}
+                  className="min-h-[40px] px-3 py-2 rounded-xl text-[11px] font-bold bg-zinc-900 text-zinc-300 border border-zinc-700 hover:text-white transition"
+                >
+                  🔄 ลองโหลดใหม่
+                </button>
+                <a
+                  href={MSD_MANUAL_REFERENCE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-h-[40px] inline-flex items-center px-3 py-2 rounded-xl text-[11px] font-bold text-orange-300 border border-orange-500/40 hover:underline"
+                >
+                  เปิด MSD Manual ในแท็บใหม่ ↗
+                </a>
+              </div>
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-zinc-400 bg-zinc-950/80 border border-zinc-800 rounded-xl px-3 py-2">
           <span>
@@ -445,7 +562,7 @@ export default function Body3DSelector({
             href={MSD_MANUAL_REFERENCE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-orange-400 hover:underline font-semibold shrink-0"
+            className="inline-flex items-center min-h-[40px] text-orange-400 hover:underline font-semibold shrink-0"
           >
             อ้างอิง MSD Manual ↗
           </a>
@@ -465,7 +582,7 @@ export default function Body3DSelector({
               key={mode.id}
               type="button"
               onClick={() => setViewMode(mode.id)}
-              className={`py-1.5 px-2 rounded-xl text-[11px] font-bold transition ${
+              className={`min-h-[40px] py-1.5 px-2 rounded-xl text-[11px] font-bold transition ${
                 viewMode === mode.id ? 'bg-orange-500 text-white shadow' : 'text-zinc-400 hover:text-white'
               }`}
             >
@@ -486,7 +603,7 @@ export default function Body3DSelector({
                 key={tool.id}
                 type="button"
                 onClick={() => setToolMode(tool.id)}
-                className={`min-h-[36px] px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition ${
+                className={`min-h-[40px] px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition ${
                   toolMode === tool.id
                     ? 'bg-cyan-500 text-zinc-950'
                     : 'bg-zinc-900 text-zinc-300 hover:text-white'
@@ -499,7 +616,7 @@ export default function Body3DSelector({
             <button
               type="button"
               onClick={() => setOrbitLocked(v => !v)}
-              className={`min-h-[36px] px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition ${
+              className={`min-h-[40px] px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition ${
                 orbitLocked
                   ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
                   : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:text-white'
@@ -516,9 +633,12 @@ export default function Body3DSelector({
                 setDissectedMeshIds([]);
                 setIsolatedMuscleId(null);
               }}
-              className="min-h-[36px] px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40"
+              className="min-h-[40px] px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40"
             >
-              🔄 คืนค่าชั้น ({dissectedMeshIds.length})
+              🔄 คืนค่าชั้น ({[
+                dissectedMeshIds.length > 0 ? `ซ่อน ${dissectedMeshIds.length} ชิ้น` : null,
+                isolatedMuscleId ? 'แยก 1 มัด' : null
+              ].filter(Boolean).join(' • ')})
             </button>
           )}
         </div>
@@ -540,7 +660,7 @@ export default function Body3DSelector({
                     setPickedMesh(null);
                     setPickedRegionId(null);
                   }}
-                  className={`min-h-[34px] px-2.5 rounded-lg text-[11px] font-bold transition ${
+                  className={`min-h-[40px] px-2.5 rounded-lg text-[11px] font-bold transition ${
                     pickMode === opt.id ? 'bg-orange-500 text-white shadow' : 'text-zinc-400 hover:text-white'
                   }`}
                 >
@@ -549,7 +669,8 @@ export default function Body3DSelector({
               ))}
             </div>
           </div>
-          <div className="flex gap-1 overflow-x-auto pb-1 -mx-0.5 px-0.5">
+          <div className="relative">
+            <div className={`flex gap-1 overflow-x-auto pb-1 -mx-0.5 px-0.5 pr-10 ${NO_SCROLLBAR}`}>
             {BODY_REGIONS.map(region => {
               const allIn = !isFullBody ? region.muscleIds.every(id => selectedMuscles.includes(id)) : true;
               const active = isFullBody || allIn;
@@ -565,7 +686,7 @@ export default function Body3DSelector({
                     rotateCameraTo(region.view);
                     selectRegionRef.current?.(region.id);
                   }}
-                  className={`shrink-0 min-h-[36px] px-2.5 rounded-xl text-[11px] font-bold border transition flex items-center gap-1 ${
+                  className={`shrink-0 min-h-[40px] px-2.5 rounded-xl text-[11px] font-bold border transition flex items-center gap-1 ${
                     active
                       ? 'bg-orange-500/20 text-orange-200 border-orange-500/60'
                       : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-600'
@@ -577,6 +698,11 @@ export default function Body3DSelector({
                 </button>
               );
             })}
+            </div>
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute right-0 top-0 bottom-1 w-10 rounded-r-xl bg-gradient-to-l from-zinc-950 via-zinc-950/80 to-transparent"
+            />
           </div>
           <p className="text-[10px] text-zinc-500 leading-snug">
             {pickMode === 'muscle'
@@ -615,7 +741,7 @@ export default function Body3DSelector({
                   key={cam.id}
                   type="button"
                   onClick={() => rotateCameraTo(cam.id)}
-                  className={`min-h-[36px] px-3 py-1 rounded-lg text-xs font-bold transition ${
+                  className={`min-h-[40px] px-3 py-1 rounded-lg text-xs font-bold transition ${
                     cameraView === cam.id ? 'bg-orange-500 text-white' : 'text-zinc-300 hover:text-white'
                   }`}
                 >
@@ -628,24 +754,41 @@ export default function Body3DSelector({
               <button
                 type="button"
                 onClick={() => adjustZoom(-0.7)}
-                className="min-h-[36px] px-3 py-1 rounded-lg text-xs font-bold text-zinc-200 hover:bg-zinc-800"
+                className="min-h-[40px] px-3 py-1 rounded-lg text-xs font-bold text-zinc-200 hover:bg-zinc-800"
               >
                 ＋ ซูม
               </button>
               <button
                 type="button"
                 onClick={() => adjustZoom(0.7)}
-                className="min-h-[36px] px-3 py-1 rounded-lg text-xs font-bold text-zinc-200 hover:bg-zinc-800"
+                className="min-h-[40px] px-3 py-1 rounded-lg text-xs font-bold text-zinc-200 hover:bg-zinc-800"
               >
                 － ซูม
               </button>
             </div>
           </div>
         </div>
+
+        {hint && (
+          <div
+            key={hint.id}
+            role="status"
+            aria-live="polite"
+            className="text-[11px] font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/40 rounded-xl px-3 py-2"
+          >
+            {hint.kind === 'min1'
+              ? '⚠️ ต้องเลือกอย่างน้อย 1 มัด'
+              : 'ℹ️ เลือกเฉพาะมัดนี้แล้ว (ออกจากโหมดทั่วร่างกาย)'}
+          </div>
+        )}
       </div>
 
       {/* MSD Manual Medical Anatomical Reference Card */}
-      <div className="bg-zinc-950/90 border border-orange-500/35 rounded-2xl p-3 space-y-1">
+      <div
+        className={`bg-zinc-950/90 border rounded-2xl p-3 space-y-1 transition ${
+          hint?.kind === 'min1' ? 'border-amber-400 ring-2 ring-amber-400/60 animate-pulse' : 'border-orange-500/35'
+        }`}
+      >
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs font-extrabold text-white">{displayMeta.nameTh}</span>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-orange-300 border border-zinc-800">
@@ -679,13 +822,13 @@ export default function Body3DSelector({
             <button
               type="button"
               onClick={onSmartRecoveryPick}
-              className="min-h-[34px] px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition"
+              className="min-h-[40px] px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition"
             >
               ✨ เลือกมัดที่ฟื้นตัวพร้อมฝึก (&gt;=85%)
             </button>
           )}
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 max-h-48 overflow-y-auto pr-1">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 max-h-64 sm:max-h-48 overflow-y-auto pr-1">
           {MUSCLE_GROUPS.map(m => {
             const active = isFullBody || selectedMuscles.includes(m.id);
             const rec = recoveryStats[m.id] ?? 100;
@@ -695,20 +838,21 @@ export default function Body3DSelector({
                 type="button"
                 onClick={() => {
                   setFocusedMuscle(m.id);
+                  if (engineMode === 'ecorche') hintForMuscleClickRef.current?.(m.id);
                   if (onToggleMuscle) onToggleMuscle(m.id);
                 }}
-                className={`px-2 py-1.5 rounded-xl text-[11px] font-semibold border text-left transition flex items-center justify-between gap-1 ${
+                className={`min-h-[40px] px-2 py-1.5 rounded-xl text-[11px] font-semibold border text-left transition flex items-center justify-between gap-1 ${
                   active
                     ? 'bg-zinc-800/95 text-white border-orange-500/80'
                     : 'bg-zinc-950/60 text-zinc-400 border-zinc-800 hover:border-zinc-700'
                 }`}
               >
-                <div className="flex items-center gap-1.5 min-w-0">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
                   <span
                     className="w-2 h-2 rounded-full shrink-0"
                     style={{ backgroundColor: active ? m.color : '#7f1d1d' }}
                   />
-                  <span className="truncate">{m.nameTh.split(' (')[0]}</span>
+                  <span className="line-clamp-2 leading-tight break-words min-w-0">{m.nameTh.split(' (')[0]}</span>
                 </div>
                 <span className="text-[9px] font-mono text-emerald-400 shrink-0">{rec}%</span>
               </button>
