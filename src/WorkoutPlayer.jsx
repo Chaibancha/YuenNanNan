@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { MUSCLE_GROUPS, TRAINING_MODALITIES, MediaPreloader } from './WorkoutEngine.js';
 import { BiomechanicalVideoLoopEngine } from './ExerciseVideoEngine.js';
+import Exercise3DCoach from './Exercise3DCoach.jsx';
 import { computeSessionSummary } from './sessionSummary.js';
 
 export { computeSessionSummary, getCompletedStepIndexes, getTrainedMuscleIds } from './sessionSummary.js';
@@ -171,7 +172,8 @@ export default function WorkoutPlayer({
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission === 'granted' : false
   );
   const [videoSpeed, setVideoSpeed] = useState(1.0);
-  const [videoAngle, setVideoAngle] = useState('side');
+  const [videoAngle, setVideoAngle] = useState('iso');
+  const [stageMode, setStageMode] = useState('3d'); // '3d' (Interactive 360° 3D Form Coach) | 'video' (2D Video/Photo Stream)
   const [flashClass, setFlashClass] = useState('');
   const [toastData, setToastData] = useState(null);
   const [showPromptModal, setShowPromptModal] = useState(false);
@@ -959,32 +961,44 @@ export default function WorkoutPlayer({
             <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">{currentStep?.nameEn}</p>
           </div>
 
-          {/* LOOPING WORKOUT VIDEO + 7-MINUTE SVG RING TIMER (DEF-02: Unobstructed 16:10 canvas with controls placed below) */}
+          {/* INTERACTIVE 3D FORM COACH / LOOPING VIDEO + 7-MINUTE SVG RING TIMER */}
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-stretch flex-1">
-            {/* HTML5 Looping Video Stage + Safe Canvas Fallback (CR-004 / DEF-02) */}
+            {/* Interactive 360° 3D Exercise Stage (Default) + HTML5 Video/Canvas Stage */}
             <div className="sm:col-span-7 rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800 flex flex-col justify-between">
               <div
                 className={`relative w-full aspect-[16/10] bg-zinc-950 flex items-center justify-center ${
-                  focusMode ? 'min-h-[300px] sm:min-h-[380px]' : 'min-h-[230px] sm:min-h-[260px]'
+                  focusMode ? 'min-h-[300px] sm:min-h-[380px]' : 'min-h-[250px] sm:min-h-[280px]'
                 }`}
               >
-                <video
-                  ref={videoElRef}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-contain bg-zinc-950"
-                />
-                <canvas
-                  ref={fallbackCanvasRef}
-                  width={800}
-                  height={488}
-                  className="hidden w-full h-full object-contain bg-zinc-950"
-                />
+                {stageMode === '3d' && (
+                  <Exercise3DCoach
+                    step={currentStep}
+                    selectedEquipment={schedule?.selectedEquipment || ['bodyweight']}
+                    playbackRate={videoSpeed}
+                    cameraAngle={videoAngle}
+                    onCameraAngleChange={setVideoAngle}
+                  />
+                )}
+
+                <div className={stageMode === 'video' ? 'w-full h-full flex items-center justify-center' : 'hidden'}>
+                  <video
+                    ref={videoElRef}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-contain bg-zinc-950"
+                  />
+                  <canvas
+                    ref={fallbackCanvasRef}
+                    width={800}
+                    height={488}
+                    className="hidden w-full h-full object-contain bg-zinc-950"
+                  />
+                </div>
               </div>
 
-              {/* Dedicated Footer Bar below the video frame so the 2D/photo athlete is never covered (DEF-02) */}
+              {/* Dedicated Footer Bar below the stage frame (3D / 2D Mode Toggle, Speed, Angle, Muscle Pill) */}
               <div className="flex flex-col gap-2 bg-zinc-950 border-t border-zinc-800 p-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <span
@@ -993,9 +1007,31 @@ export default function WorkoutPlayer({
                   >
                     🎯 {currentStep?.primaryMuscleTh}
                   </span>
+
+                  <div className="flex items-center gap-1 bg-zinc-900 p-0.5 rounded-xl border border-zinc-800">
+                    <button
+                      type="button"
+                      onClick={() => setStageMode('3d')}
+                      className={`min-h-[34px] px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition ${
+                        stageMode === '3d' ? 'bg-orange-500 text-white shadow' : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      🎮 โมเดล 3D หมุนได้ 360°
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStageMode('video')}
+                      className={`min-h-[34px] px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition ${
+                        stageMode === 'video' ? 'bg-orange-500 text-white shadow' : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      🎬 วิดีโอ 2D
+                    </button>
+                  </div>
+
                   {remainingSec <= 5 && nextStep && (
                     <span className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-500 text-zinc-950">
-                      {preloadedNextReady ? '⚡ วิดีโอท่าถัดไปพร้อมแล้ว' : '⏳ กำลังเตรียมท่าถัดไป...'}
+                      {preloadedNextReady ? '⚡ ท่าถัดไปพร้อมแล้ว' : '⏳ กำลังเตรียมท่าถัดไป...'}
                     </span>
                   )}
                 </div>
@@ -1017,14 +1053,16 @@ export default function WorkoutPlayer({
                   </div>
                   <div className="flex items-center gap-1.5">
                     {[
+                      { id: 'iso', label: 'เฉียง 3D' },
                       { id: 'side', label: 'ข้าง (Side)' },
-                      { id: 'front', label: 'หน้า (Front)' }
+                      { id: 'front', label: 'หน้า (Front)' },
+                      { id: 'back', label: 'หลัง (Back)' }
                     ].map(ang => (
                       <button
                         key={ang.id}
                         type="button"
                         onClick={() => setVideoAngle(ang.id)}
-                        className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                        className={`min-h-[36px] px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
                           videoAngle === ang.id ? 'bg-cyan-500 text-zinc-950' : 'bg-zinc-800 text-zinc-300'
                         }`}
                       >

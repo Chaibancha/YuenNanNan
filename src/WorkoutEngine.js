@@ -859,9 +859,11 @@ const POSE_JOINT_LOAD_MAP = {
   jump_squat: ['knee'],
   thruster: ['knee', 'shoulder'],
   jump_rope: ['knee'],
+  yoga_warrior: ['knee'],
+  indoor_bike: ['knee'],
   pushup: ['wrist', 'shoulder'],
   pike_pushup: ['wrist', 'shoulder'],
-  mountain_climber: ['wrist', 'shoulder'],
+  mountain_climber: ['wrist', 'shoulder', 'knee'],
   tricep_dip: ['wrist', 'shoulder'],
   bench_press: ['shoulder', 'wrist'],
   yoga_downward_dog: ['wrist', 'shoulder'],
@@ -874,12 +876,43 @@ const POSE_JOINT_LOAD_MAP = {
   yoga_cobra: ['lower_back']
 };
 
+const EXERCISE_JOINT_LOAD_OVERRIDES = {
+  ex_farmer_grip_wrist_curl: ['wrist'],
+  ex_side_plank_rotation: ['wrist', 'shoulder', 'lower_back'],
+  ex_db_push_press: ['shoulder', 'knee'],
+  ex_band_face_pull: ['shoulder'],
+  ex_yoga_pigeon_warrior_lunge: ['knee'],
+  ex_indoor_bike_wingate: ['knee'],
+  ex_mountain_climber_sprint: ['wrist', 'shoulder', 'knee']
+};
+
 export const JOINT_STRESS_OPTIONS = [
   { id: 'knee', labelTh: 'ข้อเข่า (Knee)', icon: '🦵' },
   { id: 'wrist', labelTh: 'ข้อมือ (Wrist)', icon: '✋' },
   { id: 'lower_back', labelTh: 'หลังล่าง (Lower Back)', icon: '🧘' },
   { id: 'shoulder', labelTh: 'หัวไหล่ (Shoulder)', icon: '💪' }
 ];
+
+const VALID_JOINT_IDS = new Set(JOINT_STRESS_OPTIONS.map(j => j.id));
+
+const MODALITY_HR_PCT = {
+  HIIT: [0.82, 0.95],
+  REHIT: [0.63, 0.99],
+  CARDIO: [0.65, 0.8],
+  YOGA: [0.5, 0.67],
+  '7MIN': [0.78, 0.93]
+};
+
+export function calculateMaxHr(age = 30) {
+  const clampedAge = Math.min(100, Math.max(12, Number(age) || 30));
+  return Math.round(208 - 0.7 * clampedAge);
+}
+
+export function getAgeAdjustedHrTargetBpm(modality, age = 30) {
+  const maxHr = calculateMaxHr(age);
+  const [minPct, maxPct] = MODALITY_HR_PCT[modality] || [0.68, 0.88];
+  return [Math.round(maxHr * minPct), Math.round(maxHr * maxPct)];
+}
 
 /**
  * อนุมานแรงกดทับข้อต่อของแต่ละท่าฝึก (ใช้กรองความปลอดภัยตามโปรไฟล์อาการบาดเจ็บ)
@@ -889,7 +922,8 @@ export function inferJointLoad(exercise) {
   if (Array.isArray(exercise.jointLoad)) return [...exercise.jointLoad];
 
   const poseType = exercise.videoKinematics?.poseType || '';
-  const stressSet = new Set(POSE_JOINT_LOAD_MAP[poseType] || []);
+  const baseLoad = EXERCISE_JOINT_LOAD_OVERRIDES[exercise.id] || POSE_JOINT_LOAD_MAP[poseType] || [];
+  const stressSet = new Set(baseLoad);
 
   if (!exercise.lowImpact && ['quads', 'calves_tibialis'].includes(exercise.primaryMuscle)) {
     stressSet.add('knee');
@@ -1036,6 +1070,24 @@ const DEFAULT_USER_PROFILE = {
   developerMode: false
 };
 
+function sanitizeInjuredJoints(list) {
+  if (!Array.isArray(list)) return [];
+  return [...new Set(list.filter(j => VALID_JOINT_IDS.has(j)))];
+}
+
+function sanitizeUserProfile(profile) {
+  return {
+    ...DEFAULT_USER_PROFILE,
+    ...(profile || {}),
+    weightKg: Math.min(200, Math.max(35, Number(profile?.weightKg) || 70)),
+    heightCm: Math.min(230, Math.max(120, Number(profile?.heightCm) || 170)),
+    age: Math.min(100, Math.max(12, Number(profile?.age) || 30)),
+    weeklyGoalDays: Math.min(7, Math.max(1, Number(profile?.weeklyGoalDays) || 4)),
+    injuredJoints: sanitizeInjuredJoints(profile?.injuredJoints),
+    developerMode: Boolean(profile?.developerMode)
+  };
+}
+
 export function loadUserProfile() {
   try {
     if (typeof window === 'undefined' || !window.localStorage) {
@@ -1043,33 +1095,14 @@ export function loadUserProfile() {
     }
     const raw = window.localStorage.getItem(USER_PROFILE_STORAGE_KEY);
     if (!raw) return { ...DEFAULT_USER_PROFILE };
-    const parsed = JSON.parse(raw);
-    return {
-      ...DEFAULT_USER_PROFILE,
-      ...parsed,
-      weightKg: Math.min(200, Math.max(35, Number(parsed.weightKg) || 70)),
-      heightCm: Math.min(230, Math.max(120, Number(parsed.heightCm) || 170)),
-      age: Math.min(100, Math.max(12, Number(parsed.age) || 30)),
-      weeklyGoalDays: Math.min(7, Math.max(1, Number(parsed.weeklyGoalDays) || 4)),
-      injuredJoints: Array.isArray(parsed.injuredJoints) ? parsed.injuredJoints : [],
-      developerMode: Boolean(parsed.developerMode)
-    };
+    return sanitizeUserProfile(JSON.parse(raw));
   } catch {
     return { ...DEFAULT_USER_PROFILE };
   }
 }
 
 export function saveUserProfile(profile) {
-  const sanitized = {
-    ...DEFAULT_USER_PROFILE,
-    ...profile,
-    weightKg: Math.min(200, Math.max(35, Number(profile?.weightKg) || 70)),
-    heightCm: Math.min(230, Math.max(120, Number(profile?.heightCm) || 170)),
-    age: Math.min(100, Math.max(12, Number(profile?.age) || 30)),
-    weeklyGoalDays: Math.min(7, Math.max(1, Number(profile?.weeklyGoalDays) || 4)),
-    injuredJoints: Array.isArray(profile?.injuredJoints) ? profile.injuredJoints : [],
-    developerMode: Boolean(profile?.developerMode)
-  };
+  const sanitized = sanitizeUserProfile(profile);
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(sanitized));
@@ -1087,6 +1120,7 @@ export const WARMUP_EXERCISES = [
     secondaryMuscles: ['chest_upper_Mid', 'rhomboids_erector', 'serratus_obliques'],
     equipment: ['bodyweight'],
     lowImpact: true,
+    jointLoad: ['shoulder', 'knee'],
     emgActivation: { shoulders_anterior_lateral: 60, serratus_obliques: 50 },
     videoKinematics: { poseType: 'yoga_warrior', tempoSec: 2.2, equipRender: 'bodyweight', rangeDeg: 75 },
     formCues: 'หมุนหัวไหล่กว้างๆ สลับบิดลำตัวซ้าย-ขวา หายใจเข้าออกลึกๆ เพื่อเพิ่มอุณหภูมิกล้ามเนื้อและน้ำเลี้ยงข้อต่อ',
@@ -1100,6 +1134,7 @@ export const WARMUP_EXERCISES = [
     secondaryMuscles: ['quads', 'glutes', 'hamstrings'],
     equipment: ['bodyweight'],
     lowImpact: true,
+    jointLoad: ['knee'],
     emgActivation: { hip_adductors: 65, quads: 58, glutes: 55 },
     videoKinematics: { poseType: 'squat', tempoSec: 2.0, equipRender: 'bodyweight', rangeDeg: 80 },
     formCues: 'ก้าวยาวเปิดสะโพก บิดอกขึ้นหาเพดาน สลับกับย่อสควอทช้าๆ เพื่อเตรียมพร้อมข้อเข่าและข้อสะโพก',
@@ -1116,12 +1151,90 @@ export const COOLDOWN_EXERCISES = [
     secondaryMuscles: ['hamstrings', 'neck_scm', 'abs_rectus'],
     equipment: ['bodyweight', 'yoga_mat'],
     lowImpact: true,
+    jointLoad: ['wrist', 'shoulder'],
     emgActivation: { rhomboids_erector: 35, hamstrings: 40 },
     videoKinematics: { poseType: 'yoga_downward_dog', tempoSec: 3.4, equipRender: 'yoga_mat', rangeDeg: 40 },
     formCues: 'ค้างท่ายืดกล้ามเนื้อที่ใช้งานหลัก พร้อมสูดหายใจเข้าลึก 4 วินาที ผ่อนออกยาว 6 วินาที เพื่อเร่งการฟื้นตัว',
     mediaUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=900&q=80'
   }
 ];
+
+/**
+ * เลือกท่าวอร์มอัพและคูลดาวน์ที่ปลอดภัยต่อข้อต่อที่ผู้ใช้ระบุว่าบาดเจ็บ
+ */
+export function resolveSafeWarmupExercises(injuredJoints = []) {
+  const injured = sanitizeInjuredJoints(injuredJoints);
+  const hasShoulder = injured.includes('shoulder');
+  const hasKnee = injured.includes('knee');
+
+  let wu1 = WARMUP_EXERCISES[0];
+  if (hasShoulder) {
+    wu1 = {
+      id: 'warmup_safe_cervical_thoracic',
+      nameEn: 'Seated Neck & Thoracic Mobility Warm-Up',
+      nameTh: 'วอร์มอัพหมุนลำตัวและยืดคอ-บ่าแบบถนอมหัวไหล่และเข่า',
+      primaryMuscle: 'neck_scm',
+      secondaryMuscles: ['abs_rectus'],
+      equipment: ['bodyweight'],
+      lowImpact: true,
+      jointLoad: [],
+      emgActivation: { neck_scm: 58, abs_rectus: 42 },
+      videoKinematics: { poseType: 'yoga_seated_stretch', tempoSec: 2.4, equipRender: 'bodyweight', rangeDeg: 40 },
+      formCues: 'นั่งหรือยืนหลังตรง ผ่อนคลายหัวไหล่ต่ำ หมุนศีรษะและบิดลำตัวเบาๆ พร้อมหายใจเข้าออกลึกๆ เพื่อเพิ่มการไหลเวียนเลือด',
+      mediaUrl: WARMUP_EXERCISES[0].mediaUrl
+    };
+  } else if (hasKnee) {
+    wu1 = {
+      ...WARMUP_EXERCISES[0],
+      id: 'warmup_safe_upper_mobility',
+      nameTh: 'วอร์มอัพเปิดข้อไหล่และหมุนลำตัวท่อนบน (ถนอมข้อเข่า)',
+      jointLoad: ['shoulder'],
+      videoKinematics: { poseType: 'band_pull_apart', tempoSec: 2.2, equipRender: 'bodyweight', rangeDeg: 75 },
+      formCues: 'ยืนทรงตัวมั่นคงโดยไม่ต้องย่อเข่า หมุนหัวไหล่กว้างๆ สลับบิดลำตัวซ้าย-ขวา หายใจเข้าออกลึกๆ'
+    };
+  }
+
+  let wu2 = WARMUP_EXERCISES[1];
+  if (hasKnee) {
+    wu2 = {
+      id: 'warmup_safe_glute_bridge',
+      nameEn: 'Supine Glute Bridge & Core Activation',
+      nameTh: 'วอร์มอัพปลุกสะโพกและแกนกลางลำตัวแบบถนอมข้อเข่า',
+      primaryMuscle: 'glutes',
+      secondaryMuscles: ['abs_rectus', 'hamstrings'],
+      equipment: ['bodyweight', 'yoga_mat'],
+      lowImpact: true,
+      jointLoad: [],
+      emgActivation: { glutes: 62, abs_rectus: 54 },
+      videoKinematics: { poseType: 'hip_thrust', tempoSec: 2.0, equipRender: 'bodyweight', rangeDeg: 60 },
+      formCues: 'นอนหงายชันเข่าเบาๆ กดส้นเท้ายกสะโพกขึ้นช้าๆ เพื่อปลุกกล้ามเนื้อก้นและแกนกลางโดยไม่ลงน้ำหนักที่ข้อเข่า',
+      mediaUrl: WARMUP_EXERCISES[1].mediaUrl
+    };
+  }
+
+  return [wu1, wu2];
+}
+
+export function resolveSafeCooldownExercise(injuredJoints = []) {
+  const injured = sanitizeInjuredJoints(injuredJoints);
+  if (injured.some(j => j === 'wrist' || j === 'shoulder' || j === 'lower_back')) {
+    return {
+      id: 'cooldown_safe_savasana_breath',
+      nameEn: 'Supine Savasana & Parasympathetic Breathing',
+      nameTh: 'คูลดาวน์ผ่อนคลายกล้ามเนื้อและฝึกหายใจลดอัตราการเต้นหัวใจ (Savasana)',
+      primaryMuscle: 'neck_scm',
+      secondaryMuscles: ['abs_rectus', 'glutes'],
+      equipment: ['bodyweight', 'yoga_mat'],
+      lowImpact: true,
+      jointLoad: [],
+      emgActivation: { neck_scm: 35, abs_rectus: 30 },
+      videoKinematics: { poseType: 'yoga_seated_stretch', tempoSec: 3.4, equipRender: 'yoga_mat', rangeDeg: 35 },
+      formCues: 'นั่งหรือนอนหงายผ่อนคลายบนเสื่อ ปล่อยหัวไหล่ ข้อมือ และหลังล่างสบายๆ หายใจเข้า 4 วินาที ผ่อนออกยาว 6 วินาที',
+      mediaUrl: COOLDOWN_EXERCISES[0].mediaUrl
+    };
+  }
+  return COOLDOWN_EXERCISES[0];
+}
 
 /**
  * สร้าง AI Prompt สำหรับโมเดลสร้างภาพและวิดีโอวนลูปสมจริง
@@ -1173,16 +1286,18 @@ export function isExerciseEquipmentCompatible(exercise, selectedEquipment = ['bo
 export function resolveExerciseForEquipment(exercise, selectedEquipment = ['bodyweight']) {
   if (!exercise) return exercise;
   const activeEquip = Array.isArray(selectedEquipment) && selectedEquipment.length > 0 ? selectedEquipment : ['bodyweight'];
-  const has = eq => activeEquip.includes(eq);
-  const matched = (exercise.equipment || ['bodyweight']).filter(eq => has(eq));
-  const equipmentUsed = matched.length > 0 ? matched : [activeEquip[0] || 'bodyweight'];
+  const eqList = Array.isArray(exercise.equipment) && exercise.equipment.length > 0 ? exercise.equipment : ['bodyweight'];
+  const matched = eqList.filter(eq => activeEquip.includes(eq));
+  const fallbackEq = eqList.includes('bodyweight') ? 'bodyweight' : eqList[0];
+  const equipmentUsed = matched.length > 0 ? matched : [fallbackEq];
+  const has = eq => (matched.length > 0 ? activeEquip.includes(eq) : eq === fallbackEq);
 
   let nameTh = exercise.nameTh;
   let nameEn = exercise.nameEn;
   let formCues = exercise.formCues;
   let equipRender = exercise.videoKinematics?.equipRender || equipmentUsed[0] || 'bodyweight';
 
-  if (! matched.includes(equipRender)) {
+  if (!equipmentUsed.includes(equipRender)) {
     equipRender = equipmentUsed[0] || 'bodyweight';
   }
 
