@@ -1503,6 +1503,8 @@ export function resolveExerciseForEquipment(exercise, selectedEquipment = ['body
   };
 }
 
+let schedulePlanSeq = 0;
+
 /**
  * อัลกอริทึมจัดตารางฝึกตามกรอบเวลาที่แม่นยำ 100% รองรับ HIIT / REHIT / CARDIO / YOGA / 7MIN
  * รองรับ Low-Impact Filter, Joint Injury Filter และคำนวณแคลอรีตาม Phase MET + น้ำหนักจริง
@@ -1516,6 +1518,8 @@ export function generateTimeBoundedSchedule({
   fitnessLevel = 'intermediate',
   lowImpactOnly = false,
   weightKg = 70,
+  heightCm = 170,
+  age = 30,
   injuredJoints = []
 }) {
   const effectiveDuration = modality === '7MIN' ? 7 : Number(durationMinutes);
@@ -1526,20 +1530,31 @@ export function generateTimeBoundedSchedule({
     : selectedMuscles;
 
   const activeEquip = selectedEquipment.length === 0 ? ['bodyweight'] : selectedEquipment;
-  const activeInjuredJoints = Array.isArray(injuredJoints) ? injuredJoints : [];
-  let jointFilterFallbackUsed = false;
+  const activeInjuredJoints = sanitizeInjuredJoints(injuredJoints);
 
-  // Primary pool: matches primary muscle + selected equipment + impact + joint safety + modality
-  let candidatePool = EXERCISE_DATABASE.filter(ex => {
+  // Unfiltered primary pool (before joint safety) so we know when injury protection forced substitutions
+  const unfilteredPrimaryPool = EXERCISE_DATABASE.filter(ex => {
     const matchMuscle = activeMuscles.includes(ex.primaryMuscle);
     const matchEquip = isExerciseEquipmentCompatible(ex, activeEquip);
     const matchImpact = !lowImpactOnly || ex.lowImpact;
-    const matchJoints = isExerciseJointSafe(ex, activeInjuredJoints);
     const matchModality = modality === 'YOGA'
       ? ex.supportedModalities.includes('YOGA')
       : true;
-    return matchMuscle && matchEquip && matchImpact && matchJoints && matchModality;
+    return matchMuscle && matchEquip && matchImpact && matchModality;
   });
+
+  // Primary pool: matches primary muscle + selected equipment + impact + joint safety + modality
+  let candidatePool = unfilteredPrimaryPool.filter(ex => isExerciseJointSafe(ex, activeInjuredJoints));
+
+  const muscleLostToInjury =
+    activeInjuredJoints.length > 0 &&
+    activeMuscles.some(
+      m => unfilteredPrimaryPool.some(ex => ex.primaryMuscle === m) && !candidatePool.some(ex => ex.primaryMuscle === m)
+    );
+  let jointFilterFallbackUsed = Boolean(
+    muscleLostToInjury ||
+      (activeInjuredJoints.length > 0 && candidatePool.length < 2 && candidatePool.length < unfilteredPrimaryPool.length)
+  );
 
   // Variety supplement (DEF-06): if primary matches < 8, add secondary-muscle or compatible exercises
   // that STILL strictly respect activeEquip, joint safety, and low-impact
@@ -1574,16 +1589,16 @@ export function generateTimeBoundedSchedule({
     candidatePool = [...new Map([...candidatePool, ...equipJointOnly].map(item => [item.id, item])).values()];
   }
 
-  // Fallback ขั้น 3: กรณีบาดเจ็บหลายข้อต่อและเลือกอุปกรณ์เฉพาะทางเดียว (เช่น bike)
+  // Fallback ขั้น 3: กรณีบาดเจ็บหลายข้อต่อและอุปกรณ์ที่เลือกไม่มีท่าปลอดภัย ให้สลับไปใช้ท่าปลอดภัยต่อข้อต่อเป็นหลัก (ไม่ฝืนแสดงท่าที่กระทบข้อต่อ)
   if (candidatePool.length < 1) {
-    const equipOnly = EXERCISE_DATABASE.filter(ex => isExerciseEquipmentCompatible(ex, activeEquip));
-    if (equipOnly.length > 0) {
-      jointFilterFallbackUsed = activeInjuredJoints.length > 0;
-      candidatePool = equipOnly;
-    } else {
-      jointFilterFallbackUsed = activeInjuredJoints.length > 0;
-      candidatePool = EXERCISE_DATABASE.filter(ex => ex.equipment.includes('bodyweight'));
-    }
+    jointFilterFallbackUsed = activeInjuredJoints.length > 0;
+    const jointSafeLowImpact = EXERCISE_DATABASE.filter(
+      ex => isExerciseJointSafe(ex, activeInjuredJoints) && (!lowImpactOnly || ex.lowImpact)
+    );
+    candidatePool =
+      jointSafeLowImpact.length > 0
+        ? jointSafeLowImpact
+        : EXERCISE_DATABASE.filter(ex => isExerciseJointSafe(ex, activeInjuredJoints));
   }
 
   const resolvedPool = candidatePool.map(ex => resolveExerciseForEquipment(ex, activeEquip));
@@ -1592,16 +1607,17 @@ export function generateTimeBoundedSchedule({
   const steps = [];
   let stepCounter = 1;
 
-  // กำหนด Warm-up & Cool-down ตามความยาวรวม (รองรับ 7 นาทีจนถึง 45 นาที)
+  // กำหนด Warm-up & Cool-down ตามความยาวรวม (รองรับ 7 นาทีจนถึง 45 นาที) โดยปรับให้ปลอดภัยต่อข้อต่อที่บาดเจ็บ
   const warmupTotalSec = totalSeconds <= 450 ? 40 : totalSeconds <= 600 ? 80 : totalSeconds <= 1200 ? 120 : 180;
   const cooldownBaseSec = totalSeconds <= 450 ? 40 : totalSeconds <= 600 ? 60 : totalSeconds <= 1200 ? 90 : 120;
   const mainBlockSec = totalSeconds - warmupTotalSec - cooldownBaseSec;
 
   const wu1Sec = Math.floor(warmupTotalSec / 2);
   const wu2Sec = warmupTotalSec - wu1Sec;
+  const safeWarmups = resolveSafeWarmupExercises(activeInjuredJoints);
   [
-    { ex: resolveExerciseForEquipment(WARMUP_EXERCISES[0], activeEquip), dur: wu1Sec, label: modality === 'YOGA' ? 'PRANAYAMA WARM-UP 1/2' : 'WARM-UP 1/2' },
-    { ex: resolveExerciseForEquipment(WARMUP_EXERCISES[1], activeEquip), dur: wu2Sec, label: modality === 'YOGA' ? 'MOBILITY FLOW 2/2' : 'WARM-UP 2/2' }
+    { ex: resolveExerciseForEquipment(safeWarmups[0], activeEquip), dur: wu1Sec, label: modality === 'YOGA' ? 'PRANAYAMA WARM-UP 1/2' : 'WARM-UP 1/2' },
+    { ex: resolveExerciseForEquipment(safeWarmups[1], activeEquip), dur: wu2Sec, label: modality === 'YOGA' ? 'MOBILITY FLOW 2/2' : 'WARM-UP 2/2' }
   ].forEach(item => {
     steps.push(createStepObject(stepCounter++, 'WARMUP', item.ex, item.dur, item.label, {
       fitnessLevel,
@@ -1747,11 +1763,12 @@ export function generateTimeBoundedSchedule({
   const currentSumSec = steps.reduce((acc, s) => acc + s.duration, 0);
   const exactCooldownSec = Math.max(20, totalSeconds - currentSumSec);
 
+  const safeCooldown = resolveSafeCooldownExercise(activeInjuredJoints);
   steps.push(
     createStepObject(
       stepCounter++,
       'COOLDOWN',
-      resolveExerciseForEquipment(COOLDOWN_EXERCISES[0], activeEquip),
+      resolveExerciseForEquipment(safeCooldown, activeEquip),
       exactCooldownSec,
       modality === 'YOGA' ? 'SAVASANA & RECOVERY' : 'COOL-DOWN & RECOVERY',
       { fitnessLevel, modality, selectedEquipment: activeEquip }
@@ -1771,11 +1788,15 @@ export function generateTimeBoundedSchedule({
   });
 
   return {
+    planId: `plan_${++schedulePlanSeq}`,
     modality,
     fitnessLevel,
     durationMinutes: effectiveDuration,
     lowImpactOnly,
     weightKg,
+    heightCm,
+    age,
+    hrTargetBpm: getAgeAdjustedHrTargetBpm(modality, age),
     injuredJoints: activeInjuredJoints,
     jointFilterFallbackUsed,
     totalSeconds: cumulativeSec,
@@ -1932,6 +1953,13 @@ export function swapExerciseInSchedule(schedule, stepIndex) {
   );
   const anyEquipSafeNoRoundDup = equipJointSafePool.filter(ex => !sameRoundIds.has(ex.id));
 
+  const jointSafeFallbackPool =
+    equipJointSafePool.length === 0 && schedule.jointFilterFallbackUsed
+      ? EXERCISE_DATABASE.filter(
+          ex => ex.id !== targetStep.exerciseId && (!schedule.lowImpactOnly || ex.lowImpact) && isExerciseJointSafe(ex, injuredJoints)
+        )
+      : [];
+
   const pool =
     sameMuscleFresh.length > 0
       ? sameMuscleFresh
@@ -1941,7 +1969,9 @@ export function swapExerciseInSchedule(schedule, stepIndex) {
       ? selectedMusclesNoRoundDup
       : anyEquipSafeNoRoundDup.length > 0
       ? anyEquipSafeNoRoundDup
-      : equipJointSafePool;
+      : equipJointSafePool.length > 0
+      ? equipJointSafePool
+      : jointSafeFallbackPool;
 
   if (pool.length === 0) return schedule;
 
@@ -1985,6 +2015,7 @@ export function swapExerciseInSchedule(schedule, stepIndex) {
           primaryMuscleColor: newStep.primaryMuscleColor,
           equipment: newStep.equipment,
           equipmentUsed: newStep.equipmentUsed,
+          jointLoad: newStep.jointLoad,
           videoKinematics: newStep.videoKinematics,
           mediaUrl: newStep.mediaUrl,
           aiPrompt: newStep.aiPrompt

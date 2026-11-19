@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Body3DSelector from './Body3DSelector.jsx';
 import WorkoutPlayer from './WorkoutPlayer.jsx';
 import {
@@ -9,6 +9,8 @@ import {
   SEVEN_DAY_CHALLENGE,
   JOINT_STRESS_OPTIONS,
   generateTimeBoundedSchedule,
+  calculateScheduleMetrics,
+  getAgeAdjustedHrTargetBpm,
   swapExerciseInSchedule,
   loadWorkoutStats,
   loadUserProfile,
@@ -20,6 +22,7 @@ import {
 } from './WorkoutEngine.js';
 import {
   validateProfileField,
+  computeBodyMetrics,
   shouldShowDevUi,
   resolveDurationOnModalityChange,
   stashAfterManualDuration,
@@ -99,6 +102,20 @@ export default function App() {
     return map;
   }, [workoutStats]);
 
+  const [planRevision, setPlanRevision] = useState(0);
+  const profileMetricsRef = useRef({
+    weightKg: userProfile.weightKg,
+    heightCm: userProfile.heightCm,
+    age: userProfile.age
+  });
+  profileMetricsRef.current = {
+    weightKg: userProfile.weightKg,
+    heightCm: userProfile.heightCm,
+    age: userProfile.age
+  };
+  const isFirstStructuralRef = useRef(true);
+  const isFirstMetricsRef = useRef(true);
+
   const [schedule, setSchedule] = useState(() =>
     generateTimeBoundedSchedule({
       selectedMuscles: ['chest_upper_Mid', 'lats_teres', 'quads', 'abs_rectus'],
@@ -108,8 +125,10 @@ export default function App() {
       durationMinutes: 20,
       fitnessLevel: 'intermediate',
       lowImpactOnly: false,
-      weightKg: loadUserProfile().weightKg,
-      injuredJoints: loadUserProfile().injuredJoints
+      weightKg: userProfile.weightKg,
+      heightCm: userProfile.heightCm,
+      age: userProfile.age,
+      injuredJoints: userProfile.injuredJoints
     })
   );
 
@@ -123,9 +142,15 @@ export default function App() {
     }
   }, [activeTab, mobileSection]);
 
-  const rebuildSchedule = useCallback(
-    overrides => {
-      const next = {
+  // Structural schedule rebuild (only when exercises, modality, duration, level, equipment, or injuredJoints change)
+  useEffect(() => {
+    if (isFirstStructuralRef.current) {
+      isFirstStructuralRef.current = false;
+      return;
+    }
+    const { weightKg, heightCm, age } = profileMetricsRef.current;
+    setSchedule(
+      generateTimeBoundedSchedule({
         selectedMuscles,
         isFullBody,
         selectedEquipment,
@@ -133,28 +158,39 @@ export default function App() {
         durationMinutes,
         fitnessLevel,
         lowImpactOnly,
-        weightKg: userProfile.weightKg,
-        injuredJoints: userProfile.injuredJoints,
-        ...overrides
-      };
-      setSchedule(generateTimeBoundedSchedule(next));
-    },
-    [
-      selectedMuscles,
-      isFullBody,
-      selectedEquipment,
-      modality,
-      durationMinutes,
-      fitnessLevel,
-      lowImpactOnly,
-      userProfile.weightKg,
-      userProfile.injuredJoints
-    ]
-  );
+        weightKg,
+        heightCm,
+        age,
+        injuredJoints: userProfile.injuredJoints
+      })
+    );
+  }, [
+    selectedMuscles,
+    isFullBody,
+    selectedEquipment,
+    modality,
+    durationMinutes,
+    fitnessLevel,
+    lowImpactOnly,
+    userProfile.injuredJoints,
+    planRevision
+  ]);
 
+  // In-place body metrics update: recalculates calories & age-adjusted HR target without resetting active workout or swapped steps
   useEffect(() => {
-    rebuildSchedule({});
-  }, [rebuildSchedule]);
+    if (isFirstMetricsRef.current) {
+      isFirstMetricsRef.current = false;
+      return;
+    }
+    setSchedule(prev => ({
+      ...prev,
+      weightKg: userProfile.weightKg,
+      heightCm: userProfile.heightCm,
+      age: userProfile.age,
+      hrTargetBpm: getAgeAdjustedHrTargetBpm(prev.modality, userProfile.age),
+      summary: calculateScheduleMetrics(prev.steps, prev.modality, userProfile.weightKg)
+    }));
+  }, [userProfile.weightKg, userProfile.heightCm, userProfile.age]);
 
   // CR-005 Active Workout Confirmation Guard
   const guardScheduleChange = useCallback(
@@ -248,11 +284,35 @@ export default function App() {
     [selectedEquipment, guardScheduleChange, showToastMessage]
   );
 
-  const updateProfileField = patch => {
-    const next = saveUserProfile({ ...userProfile, ...patch });
-    setUserProfile(next);
-    setProfileSavedAt(Date.now());
-  };
+  const syncProfileDraft = useCallback(profileObj => {
+    setProfileDraft({
+      weightKg: String(profileObj.weightKg),
+      heightCm: String(profileObj.heightCm),
+      age: String(profileObj.age),
+      weeklyGoalDays: String(profileObj.weeklyGoalDays)
+    });
+    setProfileErrors({});
+  }, []);
+
+  const toggleProfileDrawer = useCallback(() => {
+    setShowProfileDrawer(open => {
+      syncProfileDraft(userProfile);
+      if (!open) setProfileSavedAt(null);
+      return !open;
+    });
+  }, [syncProfileDraft, userProfile]);
+
+  const closeProfileDrawer = useCallback(() => {
+    syncProfileDraft(userProfile);
+    setShowProfileDrawer(false);
+  }, [syncProfileDraft, userProfile]);
+
+  const updateProfileField = useCallback((patch, options = {}) => {
+    setUserProfile(prev => saveUserProfile({ ...prev, ...patch }));
+    if (!options.silent) {
+      setProfileSavedAt(Date.now());
+    }
+  }, []);
 
   const handleProfileInputChange = (field, rawValue) => {
     setProfileDraft(prev => ({ ...prev, [field]: rawValue }));
@@ -270,14 +330,27 @@ export default function App() {
   };
 
   const toggleInjuredJoint = jointId => {
-    const exists = userProfile.injuredJoints.includes(jointId);
-    const nextJoints = exists
-      ? userProfile.injuredJoints.filter(j => j !== jointId)
-      : [...userProfile.injuredJoints, jointId];
     guardScheduleChange('อัปเดตตัวกรองความปลอดภัยข้อต่อ', () => {
-      updateProfileField({ injuredJoints: nextJoints });
+      setUserProfile(prev => {
+        const exists = prev.injuredJoints.includes(jointId);
+        const nextJoints = exists
+          ? prev.injuredJoints.filter(j => j !== jointId)
+          : [...prev.injuredJoints, jointId];
+        return saveUserProfile({ ...prev, injuredJoints: nextJoints });
+      });
+      setProfileSavedAt(Date.now());
     });
   };
+
+  const bodyMetrics = useMemo(
+    () =>
+      computeBodyMetrics({
+        weightKg: userProfile.weightKg,
+        heightCm: userProfile.heightCm,
+        age: userProfile.age
+      }),
+    [userProfile.weightKg, userProfile.heightCm, userProfile.age]
+  );
 
   const applyGoalPreset = preset => {
     guardScheduleChange(`เริ่มโปรแกรม: ${preset.titleTh}`, () => {
@@ -290,7 +363,8 @@ export default function App() {
       if (preset.modality === 'YOGA' && !selectedEquipment.includes('yoga_mat')) {
         setSelectedEquipment(prev => [...prev, 'yoga_mat']);
       }
-      updateProfileField({ preferredGoal: preset.id });
+      setPlanRevision(r => r + 1);
+      updateProfileField({ preferredGoal: preset.id }, { silent: true });
       setActiveTab('workout');
       setMobileSection('workout');
     });
@@ -307,6 +381,7 @@ export default function App() {
       if (dayObj.modality === 'YOGA' && !selectedEquipment.includes('yoga_mat')) {
         setSelectedEquipment(prev => [...prev, 'yoga_mat']);
       }
+      setPlanRevision(r => r + 1);
       setActiveTab('workout');
       setMobileSection('workout');
     });
@@ -319,6 +394,7 @@ export default function App() {
       setSelectedMuscles(MUSCLE_GROUPS.map(m => m.id));
       setModality('7MIN');
       setDurationMinutes(7);
+      setPlanRevision(r => r + 1);
       setActiveTab('workout');
       setMobileSection('workout');
     });
@@ -335,6 +411,7 @@ export default function App() {
       setModality('YOGA');
       setLowImpactOnly(true);
       setDurationMinutes(15);
+      setPlanRevision(r => r + 1);
       setActiveTab('workout');
       setMobileSection('workout');
     });
@@ -460,7 +537,8 @@ export default function App() {
 
             <button
               type="button"
-              onClick={() => setShowProfileDrawer(v => !v)}
+              onClick={toggleProfileDrawer}
+              aria-expanded={showProfileDrawer}
               className="min-h-[36px] px-2.5 py-1.5 rounded-xl text-xs font-bold bg-zinc-900 border border-zinc-700 text-zinc-200 hover:border-cyan-500/60"
             >
               👤 {userProfile.weightKg} kg
@@ -528,7 +606,7 @@ export default function App() {
                 )}
                 <button
                   type="button"
-                  onClick={() => setShowProfileDrawer(false)}
+                  onClick={closeProfileDrawer}
                   aria-label="ปิดหน้าต่างข้อมูลร่างกาย"
                   className="min-h-[38px] px-3 py-1 rounded-xl bg-zinc-800 text-xs font-bold text-zinc-300"
                 >
@@ -538,94 +616,46 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
-                <label htmlFor="profile-weight-kg" className="block text-zinc-400 font-bold">
-                  น้ำหนักตัว (kg)
-                </label>
-                <input
-                  id="profile-weight-kg"
-                  type="number"
-                  min={35}
-                  max={200}
-                  value={profileDraft.weightKg}
-                  aria-invalid={Boolean(profileErrors.weightKg)}
-                  onChange={e => handleProfileInputChange('weightKg', e.target.value)}
-                  className={`w-full bg-zinc-900 border rounded-xl px-2.5 py-1.5 font-mono font-bold text-white ${
-                    profileErrors.weightKg ? 'border-rose-500' : 'border-zinc-700'
-                  }`}
-                />
-                {profileErrors.weightKg && (
-                  <p role="alert" className="text-[11px] text-rose-400 leading-snug">
-                    {profileErrors.weightKg}
-                  </p>
-                )}
-              </div>
-              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
-                <label htmlFor="profile-height-cm" className="block text-zinc-400 font-bold">
-                  ส่วนสูง (cm)
-                </label>
-                <input
-                  id="profile-height-cm"
-                  type="number"
-                  min={120}
-                  max={230}
-                  value={profileDraft.heightCm}
-                  aria-invalid={Boolean(profileErrors.heightCm)}
-                  onChange={e => handleProfileInputChange('heightCm', e.target.value)}
-                  className={`w-full bg-zinc-900 border rounded-xl px-2.5 py-1.5 font-mono font-bold text-white ${
-                    profileErrors.heightCm ? 'border-rose-500' : 'border-zinc-700'
-                  }`}
-                />
-                {profileErrors.heightCm && (
-                  <p role="alert" className="text-[11px] text-rose-400 leading-snug">
-                    {profileErrors.heightCm}
-                  </p>
-                )}
-              </div>
-              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
-                <label htmlFor="profile-age-years" className="block text-zinc-400 font-bold">
-                  อายุ (ปี)
-                </label>
-                <input
-                  id="profile-age-years"
-                  type="number"
-                  min={12}
-                  max={100}
-                  value={profileDraft.age}
-                  aria-invalid={Boolean(profileErrors.age)}
-                  onChange={e => handleProfileInputChange('age', e.target.value)}
-                  className={`w-full bg-zinc-900 border rounded-xl px-2.5 py-1.5 font-mono font-bold text-white ${
-                    profileErrors.age ? 'border-rose-500' : 'border-zinc-700'
-                  }`}
-                />
-                {profileErrors.age && (
-                  <p role="alert" className="text-[11px] text-rose-400 leading-snug">
-                    {profileErrors.age}
-                  </p>
-                )}
-              </div>
-              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
-                <label htmlFor="profile-weekly-goal" className="block text-zinc-400 font-bold">
-                  เป้าหมายสัปดาห์ (วัน)
-                </label>
-                <input
-                  id="profile-weekly-goal"
-                  type="number"
-                  min={1}
-                  max={7}
-                  value={profileDraft.weeklyGoalDays}
-                  aria-invalid={Boolean(profileErrors.weeklyGoalDays)}
-                  onChange={e => handleProfileInputChange('weeklyGoalDays', e.target.value)}
-                  className={`w-full bg-zinc-900 border rounded-xl px-2.5 py-1.5 font-mono font-bold text-white ${
-                    profileErrors.weeklyGoalDays ? 'border-rose-500' : 'border-zinc-700'
-                  }`}
-                />
-                {profileErrors.weeklyGoalDays && (
-                  <p role="alert" className="text-[11px] text-rose-400 leading-snug">
-                    {profileErrors.weeklyGoalDays}
-                  </p>
-                )}
-              </div>
+              {[
+                { field: 'weightKg', id: 'profile-weight-kg', label: 'น้ำหนักตัว (kg)', min: 35, max: 200 },
+                { field: 'heightCm', id: 'profile-height-cm', label: 'ส่วนสูง (cm)', min: 120, max: 230 },
+                { field: 'age', id: 'profile-age-years', label: 'อายุ (ปี)', min: 12, max: 100 },
+                { field: 'weeklyGoalDays', id: 'profile-weekly-goal', label: 'เป้าหมายสัปดาห์ (วัน)', min: 1, max: 7 }
+              ].map(cfg => (
+                <div key={cfg.field} className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-xs space-y-1">
+                  <label htmlFor={cfg.id} className="block text-zinc-400 font-bold">
+                    {cfg.label}
+                  </label>
+                  <input
+                    id={cfg.id}
+                    type="number"
+                    min={cfg.min}
+                    max={cfg.max}
+                    value={profileDraft[cfg.field]}
+                    aria-invalid={Boolean(profileErrors[cfg.field])}
+                    onChange={e => handleProfileInputChange(cfg.field, e.target.value)}
+                    className={`w-full bg-zinc-900 border rounded-xl px-2.5 py-1.5 font-mono font-bold text-white ${
+                      profileErrors[cfg.field] ? 'border-rose-500' : 'border-zinc-700'
+                    }`}
+                  />
+                  {profileErrors[cfg.field] && (
+                    <p role="alert" className="text-[11px] text-rose-400 leading-snug">
+                      {profileErrors[cfg.field]}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Live Computed BMI & Age-Adjusted HR Ceiling Strip */}
+            <div className="flex flex-wrap items-center gap-2 text-[11px] bg-zinc-950/90 border border-zinc-800 rounded-2xl px-3.5 py-2.5">
+              <span className="text-zinc-400">ค่าคำนวณจากโปรไฟล์:</span>
+              <span className="font-mono font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 rounded-lg">
+                BMI {bodyMetrics.bmi} ({bodyMetrics.bmiCategoryTh})
+              </span>
+              <span className="font-mono font-bold text-rose-300 bg-rose-500/10 border border-rose-500/30 px-2 py-0.5 rounded-lg">
+                Max HR ~{bodyMetrics.maxHrBpm} BPM (โซนฝึก {schedule.hrTargetBpm?.[0]}–{schedule.hrTargetBpm?.[1]} BPM)
+              </span>
             </div>
 
             <div className="space-y-2">
@@ -665,6 +695,11 @@ export default function App() {
                   </button>
                 )}
               </div>
+              {schedule.jointFilterFallbackUsed && (
+                <p className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
+                  ⚠️ ตัวกรองข้อต่อที่บาดเจ็บเหลือท่าในกลุ่มเป้าหมายน้อยมาก ระบบจึงเลือกท่าทางเลือกที่ปลอดภัยต่อข้อต่อของคุณให้แทน
+                </p>
+              )}
             </div>
           </section>
         )}

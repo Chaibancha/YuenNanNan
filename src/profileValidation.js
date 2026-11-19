@@ -123,3 +123,20 @@ export function getMuscleShortName(muscleId, groups = []) {
   const m = groups.find(g => g.id === muscleId);
   return m ? String(m.nameTh).split(' (')[0] : String(muscleId);
 }
+
+/**
+ * Compute BMI (Asia-Pacific / Thai Health classification) and Tanaka Max HR from body profile.
+ */
+export function computeBodyMetrics({ weightKg = 70, heightCm = 170, age = 30 } = {}) {
+  const w = Math.min(200, Math.max(35, Number(weightKg) || 70));
+  const hCm = Math.min(230, Math.max(120, Number(heightCm) || 170));
+  const a = Math.min(100, Math.max(12, Number(age) || 30));
+  const hM = hCm / 100;
+  const bmi = Number((w / (hM * hM)).toFixed(1));
+  let bmiCategoryTh = 'ปกติ (สมส่วน)';
+  if (bmi < 18.5) bmiCategoryTh = 'น้ำหนักน้อย';
+  else if (bmi >= 25.0) bmiCategoryTh = 'อ้วน';
+  else if (bmi >= 23.0) bmiCategoryTh = 'ท้วม / น้ำหนักเกิน';
+  const maxHrBpm = Math.round(208 - 0.7 * a);
+  return { bmi, bmiCategoryTh, maxHrBpm };
+}
