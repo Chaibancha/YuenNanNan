@@ -7,3 +7,15 @@ dist/
 .vscode/
 .idea/
 coverage/
+
+# Internal planning, specs, and QA docs (not part of app repository)
+PRD.md
+TODO.md
+BACKLOG.md
+CR.md
+QA_REPORT.md
+
+# Legacy prototype & scratch media
+Explode30_Original.html
+scratch_media/
+public/media/

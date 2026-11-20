@@ -45,14 +45,83 @@ function mid(a, b) {
   return pt((a.x + b.x) * 0.5, (a.y + b.y) * 0.5, (a.z + b.z) * 0.5);
 }
 
+const ARM_UPPER_LEN = 0.3;
+const ARM_LOWER_LEN = 0.28;
+const LEG_THIGH_LEN = 0.42;
+const LEG_SHIN_LEN = 0.41;
+
+/**
+ * Analytic 2-bone IK solver keeping limb segments at anatomically realistic lengths.
+ */
+function solveLimbIK(root, target, l1, l2, bendHint) {
+  const dx = target.x - root.x;
+  const dy = target.y - root.y;
+  const dz = target.z - root.z;
+  const rawDist = Math.hypot(dx, dy, dz) || 0.001;
+  const minDist = Math.abs(l1 - l2) + 0.04;
+  const maxDist = l1 + l2 - 0.01;
+  const d = Math.min(maxDist, Math.max(minDist, rawDist));
+
+  const ux = dx / rawDist;
+  const uy = dy / rawDist;
+  const uz = dz / rawDist;
+
+  const end =
+    rawDist === d
+      ? pt(target.x, target.y, target.z)
+      : pt(root.x + ux * d, Math.max(0.02, root.y + uy * d), root.z + uz * d);
+
+  const edx = end.x - root.x;
+  const edy = end.y - root.y;
+  const edz = end.z - root.z;
+  const ed = Math.hypot(edx, edy, edz) || 0.001;
+  const ex = edx / ed;
+  const ey = edy / ed;
+  const ez = edz / ed;
+
+  const a = (l1 * l1 + ed * ed - l2 * l2) / (2 * ed);
+  const h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+
+  let hx = bendHint.x;
+  let hy = bendHint.y;
+  let hz = bendHint.z;
+  const dot = hx * ex + hy * ey + hz * ez;
+  hx -= dot * ex;
+  hy -= dot * ey;
+  hz -= dot * ez;
+  let hLen = Math.hypot(hx, hy, hz);
+  if (hLen < 1e-4) {
+    hx = Math.abs(ey) < 0.9 ? 0 : 1;
+    hy = Math.abs(ey) < 0.9 ? 1 : 0;
+    hz = 0;
+    const dot2 = hx * ex + hy * ey + hz * ez;
+    hx -= dot2 * ex;
+    hy -= dot2 * ey;
+    hz -= dot2 * ez;
+    hLen = Math.hypot(hx, hy, hz) || 1;
+  }
+  hx /= hLen;
+  hy /= hLen;
+  hz /= hLen;
+
+  const midJoint = pt(
+    root.x + ex * a + hx * h,
+    Math.max(0.03, root.y + ey * a + hy * h),
+    root.z + ez * a + hz * h
+  );
+
+  return { mid: midJoint, end };
+}
+
 /**
  * คำนวณพิกัดข้อต่อ 3 มิติของนักกีฬาในแต่ละเฟรม
  * @param {string} poseType
  * @param {number} wave 0..1 (0 = จุดเริ่มต้น/ผ่อน, 1 = จุดออกแรงสูงสุด/ย่อสุด)
  * @param {number} signedWave -1..1
  * @param {number} cyclePhase 0..1
+ * @param {{ hasBench?: boolean }} [options]
  */
-export function compute3DPoseJoints(poseType = 'squat', wave = 0, signedWave = 0, cyclePhase = 0) {
+export function compute3DPoseJoints(poseType = 'squat', wave = 0, signedWave = 0, cyclePhase = 0, options = {}) {
   // Default athletic standing neutral pose (facing +z)
   let pelvis = pt(0, 0.92, 0);
   let spineMid = pt(0, 1.16, 0);
@@ -273,83 +342,138 @@ export function compute3DPoseJoints(poseType = 'squat', wave = 0, signedWave = 0
     }
 
     case 'bench_press': {
-      // Lying supine on 3D bench (bench top at y = 0.42)
-      pelvis = pt(0, 0.48, -0.22);
-      chest = pt(0, 0.5, 0.24);
-      spineMid = mid(pelvis, chest);
-      neck = pt(0, 0.5, 0.38);
-      head = pt(0, 0.52, 0.52);
-      lookAt = pt(0, 1.5, 0.24);
+      const onBench = options?.hasBench !== false;
+      if (onBench) {
+        // Lying supine on 3D bench (bench top at y = 0.42)
+        pelvis = pt(0, 0.48, -0.22);
+        chest = pt(0, 0.5, 0.24);
+        spineMid = mid(pelvis, chest);
+        neck = pt(0, 0.5, 0.38);
+        head = pt(0, 0.52, 0.52);
+        lookAt = pt(0, 1.5, 0.48);
 
-      shoulderR = pt(0.22, 0.5, 0.24);
-      shoulderL = pt(-0.22, 0.5, 0.24);
-      elbowR = pt(0.36 - wave * 0.1, 0.44 + wave * 0.26, 0.2);
-      elbowL = pt(-0.36 + wave * 0.1, elbowR.y, 0.2);
-      handR = pt(0.24, 0.62 + wave * 0.42, 0.22);
-      handL = pt(-0.24, handR.y, 0.22);
+        shoulderR = pt(0.22, 0.5, 0.24);
+        shoulderL = pt(-0.22, 0.5, 0.24);
+        elbowR = pt(0.36 - wave * 0.1, 0.44 + wave * 0.26, 0.2);
+        elbowL = pt(-0.36 + wave * 0.1, elbowR.y, 0.2);
+        handR = pt(0.24, 0.62 + wave * 0.42, 0.22);
+        handL = pt(-0.24, handR.y, 0.22);
 
-      hipR = pt(0.14, 0.46, -0.24);
-      hipL = pt(-0.14, 0.46, -0.24);
-      kneeR = pt(0.24, 0.44, -0.58);
-      kneeL = pt(-0.24, 0.44, -0.58);
-      ankleR = pt(0.24, 0.07, -0.62);
-      ankleL = pt(-0.24, 0.07, -0.62);
-      toeR = pt(0.26, 0.02, -0.76);
-      toeL = pt(-0.26, 0.02, -0.76);
+        hipR = pt(0.14, 0.46, -0.24);
+        hipL = pt(-0.14, 0.46, -0.24);
+        kneeR = pt(0.24, 0.44, -0.58);
+        kneeL = pt(-0.24, 0.44, -0.58);
+        ankleR = pt(0.24, 0.07, -0.62);
+        ankleL = pt(-0.24, 0.07, -0.62);
+        toeR = pt(0.26, 0.02, -0.76);
+        toeL = pt(-0.26, 0.02, -0.76);
+      } else {
+        // Supine Floor Chest Press (no bench)
+        pelvis = pt(0, 0.14, -0.22);
+        chest = pt(0, 0.16, 0.24);
+        spineMid = mid(pelvis, chest);
+        neck = pt(0, 0.15, 0.38);
+        head = pt(0, 0.14, 0.52);
+        lookAt = pt(0, 1.3, 0.48);
+
+        shoulderR = pt(0.22, 0.16, 0.24);
+        shoulderL = pt(-0.22, 0.16, 0.24);
+        elbowR = pt(0.34 - wave * 0.08, 0.10 + wave * 0.22, 0.2);
+        elbowL = pt(-0.34 + wave * 0.08, elbowR.y, 0.2);
+        handR = pt(0.24, 0.32 + wave * 0.36, 0.22);
+        handL = pt(-0.24, handR.y, 0.22);
+
+        hipR = pt(0.14, 0.14, -0.24);
+        hipL = pt(-0.14, 0.14, -0.24);
+        kneeR = pt(0.22, 0.46, -0.50);
+        kneeL = pt(-0.22, 0.46, -0.50);
+        ankleR = pt(0.22, 0.07, -0.54);
+        ankleL = pt(-0.22, 0.07, -0.54);
+        toeR = pt(0.24, 0.02, -0.68);
+        toeL = pt(-0.24, 0.02, -0.68);
+      }
       break;
     }
 
     case 'tricep_dip': {
-      const dip = wave * 0.22;
-      handR = pt(0.22, 0.42, -0.18);
-      handL = pt(-0.22, 0.42, -0.18);
-      pelvis = pt(0, 0.42 - dip, 0.05);
-      chest = pt(0, 0.82 - dip, -0.02);
-      spineMid = mid(pelvis, chest);
-      neck = pt(0, chest.y + 0.12, 0);
-      head = pt(0, chest.y + 0.25, 0.02);
-      lookAt = pt(0, head.y, 0.8);
+      const onBench = Boolean(options?.hasBench);
+      if (onBench) {
+        const dip = wave * 0.22;
+        handR = pt(0.22, 0.42, -0.18);
+        handL = pt(-0.22, 0.42, -0.18);
+        pelvis = pt(0, 0.42 - dip, 0.05);
+        chest = pt(0, 0.82 - dip, -0.02);
+        spineMid = mid(pelvis, chest);
+        neck = pt(0, chest.y + 0.12, 0);
+        head = pt(0, chest.y + 0.25, 0.02);
+        lookAt = pt(0, head.y, 0.8);
 
-      shoulderR = pt(0.21, chest.y, -0.02);
-      shoulderL = pt(-0.21, chest.y, -0.02);
-      elbowR = pt(0.23, 0.62 - dip * 0.5, -0.28 - wave * 0.08);
-      elbowL = pt(-0.23, elbowR.y, elbowR.z);
+        shoulderR = pt(0.21, chest.y, -0.02);
+        shoulderL = pt(-0.21, chest.y, -0.02);
+        elbowR = pt(0.23, 0.62 - dip * 0.5, -0.28 - wave * 0.08);
+        elbowL = pt(-0.23, elbowR.y, elbowR.z);
 
-      hipR = pt(0.12, pelvis.y, pelvis.z);
-      hipL = pt(-0.12, pelvis.y, pelvis.z);
-      kneeR = pt(0.13, 0.28 - dip * 0.25, 0.36);
-      kneeL = pt(-0.13, kneeR.y, 0.36);
-      ankleR = pt(0.13, 0.07, 0.68);
-      ankleL = pt(-0.13, 0.07, 0.68);
-      toeR = pt(0.13, 0.09, 0.8);
-      toeL = pt(-0.13, 0.09, 0.8);
+        hipR = pt(0.12, pelvis.y, pelvis.z);
+        hipL = pt(-0.12, pelvis.y, pelvis.z);
+        kneeR = pt(0.13, 0.28 - dip * 0.25, 0.36);
+        kneeL = pt(-0.13, kneeR.y, 0.36);
+        ankleR = pt(0.13, 0.07, 0.68);
+        ankleL = pt(-0.13, 0.07, 0.68);
+        toeR = pt(0.13, 0.09, 0.8);
+        toeL = pt(-0.13, 0.09, 0.8);
+      } else {
+        // Floor Tricep Dips (palms flat on mat/floor at y = 0.05)
+        const dip = wave * 0.09;
+        handR = pt(0.22, 0.05, -0.18);
+        handL = pt(-0.22, 0.05, -0.18);
+        pelvis = pt(0, 0.19 - dip, 0.05);
+        chest = pt(0, 0.56 - dip, -0.02);
+        spineMid = mid(pelvis, chest);
+        neck = pt(0, chest.y + 0.12, 0);
+        head = pt(0, chest.y + 0.25, 0.02);
+        lookAt = pt(0, head.y, 0.8);
+
+        shoulderR = pt(0.21, chest.y, -0.02);
+        shoulderL = pt(-0.21, chest.y, -0.02);
+        elbowR = pt(0.23, 0.32 - dip * 0.5, -0.24 - wave * 0.06);
+        elbowL = pt(-0.23, elbowR.y, elbowR.z);
+
+        hipR = pt(0.12, pelvis.y, pelvis.z);
+        hipL = pt(-0.12, pelvis.y, pelvis.z);
+        kneeR = pt(0.13, 0.36 - dip * 0.2, 0.36);
+        kneeL = pt(-0.13, kneeR.y, 0.36);
+        ankleR = pt(0.13, 0.07, 0.58);
+        ankleL = pt(-0.13, 0.07, 0.58);
+        toeR = pt(0.13, 0.02, 0.70);
+        toeL = pt(-0.13, 0.02, 0.70);
+      }
       break;
     }
 
     case 'hip_thrust': {
       const lift = wave * 0.32;
-      pelvis = pt(0, 0.14 + lift, -0.04);
-      chest = pt(0, 0.2, 0.4);
-      spineMid = mid(pelvis, chest);
-      neck = pt(0, 0.22, 0.52);
-      head = pt(0, 0.25, 0.64);
-      lookAt = pt(0, 1.2, 0.2);
+      pelvis = pt(0, 0.13 + lift, -0.04);
+      chest = pt(0, 0.15 + lift * 0.12, 0.38);
+      spineMid = pt(0, (pelvis.y + chest.y) * 0.5, (pelvis.z + chest.z) * 0.5);
+      neck = pt(0, 0.14 + lift * 0.04, 0.52);
+      head = pt(0, 0.14, 0.65);
+      lookAt = pt(0, 1.25, 0.58);
 
-      shoulderR = pt(0.21, 0.2, 0.38);
-      shoulderL = pt(-0.21, 0.2, 0.38);
-      elbowR = pt(0.28, 0.12, 0.16);
-      elbowL = pt(-0.28, 0.12, 0.16);
-      handR = pt(0.16, pelvis.y + 0.06, -0.04);
-      handL = pt(-0.16, pelvis.y + 0.06, -0.04);
+      shoulderR = pt(0.21, chest.y, 0.36);
+      shoulderL = pt(-0.21, chest.y, 0.36);
+      elbowR = pt(0.25, 0.08, 0.14);
+      elbowL = pt(-0.25, 0.08, 0.14);
+      handR = pt(0.25, 0.04, -0.12);
+      handL = pt(-0.25, 0.04, -0.12);
 
       hipR = pt(0.13, pelvis.y, pelvis.z);
       hipL = pt(-0.13, pelvis.y, pelvis.z);
-      kneeR = pt(0.16, 0.48, -0.44);
-      kneeL = pt(-0.16, 0.48, -0.44);
-      ankleR = pt(0.16, 0.07, -0.48);
-      ankleL = pt(-0.16, 0.07, -0.48);
-      toeR = pt(0.17, 0.02, -0.62);
-      toeL = pt(-0.17, 0.02, -0.62);
+      kneeR = pt(0.16, 0.47, -0.42);
+      kneeL = pt(-0.16, 0.47, -0.42);
+      ankleR = pt(0.16, 0.07, -0.46);
+      ankleL = pt(-0.16, 0.07, -0.46);
+      toeR = pt(0.17, 0.02, -0.60);
+      toeL = pt(-0.17, 0.02, -0.60);
       break;
     }
 
@@ -569,13 +693,13 @@ export function compute3DPoseJoints(poseType = 'squat', wave = 0, signedWave = 0
 
     case 'yoga_downward_dog': {
       const pedal = wave * 0.1;
-      handR = pt(0.23, 0.04, 0.56);
-      handL = pt(-0.23, 0.04, 0.56);
-      pelvis = pt(0, 0.94, -0.04);
-      chest = pt(0, 0.54, 0.32);
+      handR = pt(0.23, 0.04, 0.48);
+      handL = pt(-0.23, 0.04, 0.48);
+      pelvis = pt(0, 0.78, -0.06);
+      chest = pt(0, 0.48, 0.26);
       spineMid = mid(pelvis, chest);
-      neck = pt(0, 0.44, 0.41);
-      head = pt(0, 0.35, 0.48);
+      neck = pt(0, 0.38, 0.35);
+      head = pt(0, 0.3, 0.42);
       lookAt = pt(0, 0.15, -0.4);
 
       shoulderR = pt(0.21, chest.y, chest.z);
@@ -585,19 +709,19 @@ export function compute3DPoseJoints(poseType = 'squat', wave = 0, signedWave = 0
 
       hipR = pt(0.12, pelvis.y, pelvis.z);
       hipL = pt(-0.12, pelvis.y, pelvis.z);
-      kneeR = pt(0.13, 0.46, -0.26 + pedal * 0.4);
-      kneeL = pt(-0.13, 0.46, -0.26 + (0.1 - pedal) * 0.4);
-      ankleR = pt(0.13, 0.05 + pedal, -0.58);
-      ankleL = pt(-0.13, 0.05 + (0.1 - pedal), -0.58);
-      toeR = pt(0.13, 0.02, -0.46);
-      toeL = pt(-0.13, 0.02, -0.46);
+      kneeR = pt(0.13, 0.42, -0.22 + pedal * 0.3);
+      kneeL = pt(-0.13, 0.42, -0.22 + (0.1 - pedal) * 0.3);
+      ankleR = pt(0.13, 0.05 + pedal, -0.44);
+      ankleL = pt(-0.13, 0.05 + (0.1 - pedal), -0.44);
+      toeR = pt(0.13, 0.02, -0.34);
+      toeL = pt(-0.13, 0.02, -0.34);
       break;
     }
 
     case 'yoga_warrior': {
       const sink = wave * 0.14;
-      pelvis = pt(0, 0.78 - sink, 0);
-      chest = pt(0, 1.24 - sink, 0.02);
+      pelvis = pt(0, 0.76 - sink, 0);
+      chest = pt(0, 1.22 - sink, 0.02);
       spineMid = mid(pelvis, chest);
       neck = pt(0, chest.y + 0.13, 0.02);
       head = pt(0, chest.y + 0.27, 0.03);
@@ -607,18 +731,18 @@ export function compute3DPoseJoints(poseType = 'squat', wave = 0, signedWave = 0
       shoulderL = pt(-0.21, chest.y + 0.04, 0.02);
       elbowR = pt(0.24, chest.y + 0.26 + wave * 0.1, 0.04);
       elbowL = pt(-0.24, elbowR.y, 0.04);
-      handR = pt(0.2, chest.y + 0.54 + wave * 0.16, 0.02);
+      handR = pt(0.2, chest.y + 0.52 + wave * 0.12, 0.02);
       handL = pt(-0.2, handR.y, 0.02);
 
       hipR = pt(0.12, pelvis.y, 0.04);
       hipL = pt(-0.12, pelvis.y, -0.04);
-      kneeR = pt(0.13, 0.46 - sink * 0.2, 0.44);
-      ankleR = pt(0.13, 0.07, 0.46);
-      toeR = pt(0.13, 0.02, 0.6);
+      kneeR = pt(0.13, 0.46 - sink * 0.2, 0.38);
+      ankleR = pt(0.13, 0.07, 0.4);
+      toeR = pt(0.13, 0.02, 0.54);
 
-      kneeL = pt(-0.13, 0.42 - sink * 0.3, -0.28);
-      ankleL = pt(-0.13, 0.08, -0.58);
-      toeL = pt(-0.13, 0.02, -0.48);
+      kneeL = pt(-0.13, 0.42 - sink * 0.3, -0.22);
+      ankleL = pt(-0.13, 0.08, -0.44);
+      toeL = pt(-0.13, 0.02, -0.34);
       break;
     }
 
@@ -650,6 +774,46 @@ export function compute3DPoseJoints(poseType = 'squat', wave = 0, signedWave = 0
       break;
     }
   }
+
+  // Enforce anatomically realistic 2-bone limb lengths via analytic IK across all poses
+  const hintArmR = pt(
+    elbowR.x - (shoulderR.x + handR.x) * 0.5 + 0.05,
+    elbowR.y - (shoulderR.y + handR.y) * 0.5 - 0.04,
+    elbowR.z - (shoulderR.z + handR.z) * 0.5 - 0.05
+  );
+  const hintArmL = pt(
+    elbowL.x - (shoulderL.x + handL.x) * 0.5 - 0.05,
+    elbowL.y - (shoulderL.y + handL.y) * 0.5 - 0.04,
+    elbowL.z - (shoulderL.z + handL.z) * 0.5 - 0.05
+  );
+  const ikArmR = solveLimbIK(shoulderR, handR, ARM_UPPER_LEN, ARM_LOWER_LEN, hintArmR);
+  elbowR = ikArmR.mid;
+  handR = ikArmR.end;
+  const ikArmL = solveLimbIK(shoulderL, handL, ARM_UPPER_LEN, ARM_LOWER_LEN, hintArmL);
+  elbowL = ikArmL.mid;
+  handL = ikArmL.end;
+
+  const hintLegR = pt(
+    kneeR.x - (hipR.x + ankleR.x) * 0.5 + 0.02,
+    kneeR.y - (hipR.y + ankleR.y) * 0.5 + 0.02,
+    kneeR.z - (hipR.z + ankleR.z) * 0.5 + 0.12
+  );
+  const hintLegL = pt(
+    kneeL.x - (hipL.x + ankleL.x) * 0.5 - 0.02,
+    kneeL.y - (hipL.y + ankleL.y) * 0.5 + 0.02,
+    kneeL.z - (hipL.z + ankleL.z) * 0.5 + 0.12
+  );
+  const ikLegR = solveLimbIK(hipR, ankleR, LEG_THIGH_LEN, LEG_SHIN_LEN, hintLegR);
+  const toeDeltaR = pt(ikLegR.end.x - ankleR.x, ikLegR.end.y - ankleR.y, ikLegR.end.z - ankleR.z);
+  kneeR = ikLegR.mid;
+  ankleR = ikLegR.end;
+  toeR = pt(toeR.x + toeDeltaR.x, Math.max(0.02, toeR.y + toeDeltaR.y), toeR.z + toeDeltaR.z);
+
+  const ikLegL = solveLimbIK(hipL, ankleL, LEG_THIGH_LEN, LEG_SHIN_LEN, hintLegL);
+  const toeDeltaL = pt(ikLegL.end.x - ankleL.x, ikLegL.end.y - ankleL.y, ikLegL.end.z - ankleL.z);
+  kneeL = ikLegL.mid;
+  ankleL = ikLegL.end;
+  toeL = pt(toeL.x + toeDeltaL.x, Math.max(0.02, toeL.y + toeDeltaL.y), toeL.z + toeDeltaL.z);
 
   return {
     pelvis,

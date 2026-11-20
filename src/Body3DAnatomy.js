@@ -18,6 +18,42 @@ export const MSD_MANUAL_REFERENCE_URL =
 export const BIODIGITAL_MSD_EMBED_URL =
   'https://human.biodigital.com/widget/?be=2PcB&background.colors=9,9,11,1,18,18,24,1&initial.hand-hint=true&ui-fullscreen=true&ui-center=true&ui-dissect=true&ui-zoom=true&ui-help=true&ui-tools-display=primary&ui-info=true&uaid=3YfOR';
 
+export function getBioDigitalEmbedUrl(theme = 'dark') {
+  const bgColors =
+    theme === 'light'
+      ? '226,232,240,1,248,250,252,1'
+      : '9,9,11,1,18,18,24,1';
+  return `https://human.biodigital.com/widget/?be=2PcB&background.colors=${bgColors}&initial.hand-hint=true&ui-fullscreen=true&ui-center=true&ui-dissect=true&ui-zoom=true&ui-help=true&ui-tools-display=primary&ui-info=true&uaid=3YfOR`;
+}
+
+/**
+ * Dispose all geometries, materials, and textures in a Three.js scene cleanly.
+ */
+export function disposeThreeScene(scene) {
+  if (!scene) return;
+  const disposedTextures = new Set();
+  const disposedMaterials = new Set();
+  const disposedGeometries = new Set();
+  scene.traverse(obj => {
+    if (obj.geometry && !disposedGeometries.has(obj.geometry)) {
+      disposedGeometries.add(obj.geometry);
+      obj.geometry.dispose();
+    }
+    const mats = Array.isArray(obj.material) ? obj.material : obj.material ? [obj.material] : [];
+    mats.forEach(mat => {
+      if (!mat || disposedMaterials.has(mat)) return;
+      disposedMaterials.add(mat);
+      ['map', 'bumpMap', 'normalMap', 'roughnessMap', 'emissiveMap'].forEach(key => {
+        if (mat[key] && !disposedTextures.has(mat[key])) {
+          disposedTextures.add(mat[key]);
+          mat[key].dispose();
+        }
+      });
+      mat.dispose();
+    });
+  });
+}
+
 export const BIODIGITAL_HUMAN_API_SCRIPT =
   'https://developer.biodigital.com/builds/api/2/human-api.min.js';
 
@@ -42,7 +78,7 @@ export function mapBioDigitalObjectToMuscleId(rawNameOrId = '') {
 
   if (/(latissimus|teres major|lats\b)/.test(s)) return 'lats_teres';
   if (/(rhomboid|erector spinae|iliocostalis|longissimus|spinalis|multifidus|quadratus lumborum|thoracolumbar)/.test(s)) return 'rhomboids_erector';
-  if (/(posterior deltoid|rear deltoid|trapezius|infraspinatus|teres minor|levator scapulae|traps\b)/.test(s)) return 'shoulders_posterior_traps';
+  if (/(posterior.*deltoid|deltoid.*posterior|rear deltoid|deltoid.*rear|trapezius|infraspinatus|teres minor|levator scapulae|traps\b)/.test(s)) return 'shoulders_posterior_traps';
   if (/(deltoid|supraspinatus|subscapularis|anterior deltoid|lateral deltoid|shoulder)/.test(s)) return 'shoulders_anterior_lateral';
 
   if (/(biceps brachii|brachialis|coracobrachialis|biceps\b|bicep\b)/.test(s)) return 'biceps_brachialis';
@@ -370,12 +406,25 @@ export function buildMedicalAnatomyGroup() {
     mesh.position.set(...pos);
     mesh.scale.set(...scale);
     mesh.rotation.set(...rot);
+
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: meta.color || '#f97316',
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const glowMesh = new THREE.Mesh(geo, glowMat);
+    glowMesh.scale.set(1.16, 1.12, 1.16);
+    mesh.add(glowMesh);
+
     mesh.userData = {
       meshUid: `${muscleId}_${meshSeq++}`,
       muscleId,
       subLabel,
       meta,
-      baseColor: meta.color
+      baseColor: meta.color,
+      glowMesh
     };
     bodyGroup.add(mesh);
     muscleMeshes.push(mesh);
@@ -473,6 +522,8 @@ export function applyMedicalViewModeColors({
   isFullBody,
   hoveredMuscle,
   activeHighlightMuscle,
+  activeExerciseMuscles = null,
+  pulsePhase = 0.5,
   viewMode = 'ecorche',
   recoveryStats = {},
   dissectedMeshIds = [],
@@ -484,18 +535,27 @@ export function applyMedicalViewModeColors({
   });
 
   muscleMeshes.forEach(mesh => {
-    const { meshUid, muscleId, baseColor } = mesh.userData;
+    const { meshUid, muscleId, baseColor, glowMesh } = mesh.userData;
 
     // 1. BioDigital Dissect Tool: ซ่อนชิ้นกล้ามเนื้อที่ถูกลอกออก
     if (dissectedMeshIds.includes(meshUid)) {
       mesh.visible = false;
+      if (glowMesh) glowMesh.material.opacity = 0;
       return;
     }
     mesh.visible = true;
 
     const isSelected = isFullBody || selectedMuscles.includes(muscleId);
     const isHovered = hoveredMuscle === muscleId;
-    const isLive = activeHighlightMuscle === muscleId;
+    const isLive =
+      activeHighlightMuscle === muscleId || activeExerciseMuscles?.primary === muscleId;
+    const isExerciseSecondary =
+      Boolean(
+        activeExerciseMuscles &&
+          !isLive &&
+          ((activeExerciseMuscles.secondary || []).includes(muscleId) ||
+            (activeExerciseMuscles.emg?.[muscleId] || 0) > 0)
+      );
 
     // 2. BioDigital Isolate Tool: โปร่งแสงมัดอื่นเพื่อโฟกัสเฉพาะมัดที่กำลังแยกศึกษา
     if (isolatedMuscleId && isolatedMuscleId !== muscleId) {
@@ -503,23 +563,41 @@ export function applyMedicalViewModeColors({
       mesh.material.color.set('#3f3f46');
       mesh.material.emissive.set('#000000');
       mesh.material.emissiveIntensity = 0;
+      if (glowMesh) glowMesh.material.opacity = 0;
       return;
     }
 
     if (viewMode === 'xray') {
-      mesh.material.opacity = isLive ? 0.85 : isSelected ? 0.55 : isHovered ? 0.42 : 0.2;
+      mesh.material.opacity = isLive ? 0.9 : isExerciseSecondary ? 0.72 : isSelected ? 0.58 : isHovered ? 0.42 : 0.2;
       if (isLive) {
-        mesh.material.color.set('#f97316');
-        mesh.material.emissive.set('#ea580c');
-        mesh.material.emissiveIntensity = 0.75;
+        mesh.material.color.set('#fb923c');
+        mesh.material.emissive.set('#f97316');
+        mesh.material.emissiveIntensity = 0.78 + pulsePhase * 0.42;
+        if (glowMesh) {
+          glowMesh.material.color.set('#f97316');
+          glowMesh.material.opacity = 0.24 + pulsePhase * 0.22;
+        }
+      } else if (isExerciseSecondary) {
+        mesh.material.color.set('#fbbf24');
+        mesh.material.emissive.set('#f59e0b');
+        mesh.material.emissiveIntensity = 0.55 + pulsePhase * 0.25;
+        if (glowMesh) {
+          glowMesh.material.color.set('#fbbf24');
+          glowMesh.material.opacity = 0.16 + pulsePhase * 0.14;
+        }
       } else if (isSelected) {
         mesh.material.color.set(baseColor);
         mesh.material.emissive.set(baseColor);
-        mesh.material.emissiveIntensity = 0.42;
+        mesh.material.emissiveIntensity = 0.5 + pulsePhase * 0.22;
+        if (glowMesh) {
+          glowMesh.material.color.set(baseColor);
+          glowMesh.material.opacity = isFullBody ? 0.08 : 0.18 + pulsePhase * 0.12;
+        }
       } else {
         mesh.material.color.set('#38bdf8');
         mesh.material.emissive.set('#0284c7');
         mesh.material.emissiveIntensity = 0.15;
+        if (glowMesh) glowMesh.material.opacity = 0;
       }
       return;
     }
@@ -530,16 +608,33 @@ export function applyMedicalViewModeColors({
       if (isLive) {
         mesh.material.color.set('#ef4444');
         mesh.material.emissive.set('#dc2626');
-        mesh.material.emissiveIntensity = 0.85;
+        mesh.material.emissiveIntensity = 0.85 + pulsePhase * 0.45;
+        if (glowMesh) {
+          glowMesh.material.color.set('#f97316');
+          glowMesh.material.opacity = 0.26 + pulsePhase * 0.22;
+        }
+      } else if (isExerciseSecondary) {
+        mesh.material.color.set('#fbbf24');
+        mesh.material.emissive.set('#f59e0b');
+        mesh.material.emissiveIntensity = 0.58 + pulsePhase * 0.25;
+        if (glowMesh) {
+          glowMesh.material.color.set('#fbbf24');
+          glowMesh.material.opacity = 0.18 + pulsePhase * 0.14;
+        }
       } else if (isSelected) {
         mesh.material.color.set('#facc15');
         mesh.material.emissive.set('#eab308');
-        mesh.material.emissiveIntensity = 0.45;
+        mesh.material.emissiveIntensity = 0.52 + pulsePhase * 0.2;
+        if (glowMesh) {
+          glowMesh.material.color.set('#facc15');
+          glowMesh.material.opacity = isFullBody ? 0.08 : 0.18 + pulsePhase * 0.12;
+        }
       } else {
         const heatHex = recScore >= 85 ? '#10b981' : recScore >= 65 ? '#f59e0b' : '#f43f5e';
         mesh.material.color.set(heatHex);
         mesh.material.emissive.set(heatHex);
         mesh.material.emissiveIntensity = isHovered ? 0.45 : 0.18;
+        if (glowMesh) glowMesh.material.opacity = 0;
       }
       return;
     }
@@ -549,23 +644,48 @@ export function applyMedicalViewModeColors({
     if (isolatedMuscleId === muscleId) {
       mesh.material.color.set(baseColor);
       mesh.material.emissive.set(baseColor);
-      mesh.material.emissiveIntensity = 0.65;
+      mesh.material.emissiveIntensity = 0.72 + pulsePhase * 0.25;
+      if (glowMesh) {
+        glowMesh.material.color.set(baseColor);
+        glowMesh.material.opacity = 0.22 + pulsePhase * 0.14;
+      }
     } else if (isLive) {
-      mesh.material.color.set('#fb923c');
-      mesh.material.emissive.set('#ea580c');
-      mesh.material.emissiveIntensity = 0.78;
+      mesh.material.color.set('#ffedd5');
+      mesh.material.emissive.set(baseColor || '#f97316');
+      mesh.material.emissiveIntensity = 0.85 + pulsePhase * 0.55;
+      if (glowMesh) {
+        glowMesh.material.color.set(baseColor || '#f97316');
+        glowMesh.material.opacity = 0.28 + pulsePhase * 0.24;
+      }
+    } else if (isExerciseSecondary) {
+      mesh.material.color.set('#fef08a');
+      mesh.material.emissive.set('#f59e0b');
+      mesh.material.emissiveIntensity = 0.56 + pulsePhase * 0.28;
+      if (glowMesh) {
+        glowMesh.material.color.set('#fbbf24');
+        glowMesh.material.opacity = 0.18 + pulsePhase * 0.15;
+      }
     } else if (isSelected) {
-      mesh.material.color.set(baseColor);
+      mesh.material.color.set('#ffffff');
       mesh.material.emissive.set(baseColor);
-      mesh.material.emissiveIntensity = isHovered ? 0.55 : 0.34;
+      mesh.material.emissiveIntensity = (isHovered ? 0.68 : 0.5) + pulsePhase * 0.24;
+      if (glowMesh) {
+        glowMesh.material.color.set(baseColor);
+        glowMesh.material.opacity = isFullBody ? 0.08 + pulsePhase * 0.05 : 0.18 + pulsePhase * 0.14;
+      }
     } else if (isHovered) {
-      mesh.material.color.set('#dc2626');
-      mesh.material.emissive.set('#b91c1c');
-      mesh.material.emissiveIntensity = 0.28;
+      mesh.material.color.set('#fb7185');
+      mesh.material.emissive.set('#e11d48');
+      mesh.material.emissiveIntensity = 0.42;
+      if (glowMesh) {
+        glowMesh.material.color.set('#fb7185');
+        glowMesh.material.opacity = 0.14;
+      }
     } else {
       mesh.material.color.set('#962b33');
       mesh.material.emissive.set('#2a080a');
       mesh.material.emissiveIntensity = 0.12;
+      if (glowMesh) glowMesh.material.opacity = 0;
     }
   });
 }
@@ -635,7 +755,7 @@ export function getSubMuscleLabel(subLabel = '') {
   const clean = subLabel.replace(/ L\d+$/, '');
   if (subLabel.startsWith('Rectus Abdominis')) {
     const row = subLabel.match(/L(\d+)$/)?.[1];
-    return { en: subLabel.replace(/ L\d+$/, row ? ` (แถว ${row})` : ''), th: `กล้ามเนื้อหน้าท้อง${row ? ` แถวที่ ${row}` : ''}` };
+    return { en: subLabel.replace(/ L\d+$/, row ? ` (Row ${row})` : ''), th: `กล้ามเนื้อหน้าท้อง${row ? ` แถวที่ ${row}` : ''}` };
   }
   return { en: clean, th: SUB_MUSCLE_TH[clean] || clean };
 }
@@ -653,7 +773,7 @@ export function emphasizeMuscleMeshes({
 }) {
   muscleMeshes.forEach(mesh => {
     if (!mesh.visible || mesh.material.opacity < 0.1) return;
-    const { meshUid, muscleId } = mesh.userData;
+    const { meshUid, muscleId, glowMesh } = mesh.userData;
     const inPickedRegion = pickedRegionIds.includes(muscleId);
     const inHoverRegion = hoveredRegionIds.includes(muscleId);
 
@@ -662,16 +782,32 @@ export function emphasizeMuscleMeshes({
       mesh.material.emissive.set('#f59e0b');
       mesh.material.emissiveIntensity = 0.95;
       mesh.material.opacity = 1;
+      if (glowMesh) {
+        glowMesh.material.color.set('#fbbf24');
+        glowMesh.material.opacity = 0.36;
+      }
     } else if (meshUid === hoveredMeshUid) {
       mesh.material.color.set('#fb7185');
       mesh.material.emissive.set('#e11d48');
       mesh.material.emissiveIntensity = 0.75;
+      if (glowMesh) {
+        glowMesh.material.color.set('#fb7185');
+        glowMesh.material.opacity = 0.26;
+      }
     } else if (inHoverRegion) {
       mesh.material.emissive.set('#38bdf8');
       mesh.material.emissiveIntensity = Math.max(mesh.material.emissiveIntensity, 0.55);
+      if (glowMesh) {
+        glowMesh.material.color.set('#38bdf8');
+        glowMesh.material.opacity = Math.max(glowMesh.material.opacity, 0.22);
+      }
     } else if (inPickedRegion) {
       mesh.material.emissive.set('#f97316');
       mesh.material.emissiveIntensity = Math.max(mesh.material.emissiveIntensity, 0.6);
+      if (glowMesh) {
+        glowMesh.material.color.set('#f97316');
+        glowMesh.material.opacity = Math.max(glowMesh.material.opacity, 0.24);
+      }
     }
   });
 }

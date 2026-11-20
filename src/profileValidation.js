@@ -5,49 +5,63 @@
  */
 
 export const PROFILE_FIELD_RULES = {
-  weightKg: { label: 'น้ำหนัก', unit: 'kg', min: 35, max: 200, integer: false },
-  heightCm: { label: 'ส่วนสูง', unit: 'cm', min: 120, max: 230, integer: false },
-  age: { label: 'อายุ', unit: 'ปี', min: 12, max: 100, integer: true },
-  weeklyGoalDays: { label: 'เป้าหมายสัปดาห์', unit: 'วัน', min: 1, max: 7, integer: true }
+  weightKg: { label: 'น้ำหนัก', labelEn: 'Weight', unit: 'kg', unitEn: 'kg', min: 35, max: 200, integer: false },
+  heightCm: { label: 'ส่วนสูง', labelEn: 'Height', unit: 'cm', unitEn: 'cm', min: 120, max: 230, integer: false },
+  age: { label: 'อายุ', labelEn: 'Age', unit: 'ปี', unitEn: 'yrs', min: 12, max: 100, integer: true },
+  weeklyGoalDays: { label: 'เป้าหมายสัปดาห์', labelEn: 'Weekly Goal', unit: 'วัน', unitEn: 'days', min: 1, max: 7, integer: true }
 };
 
-export function getProfileFieldHint(field) {
+export function getProfileFieldHint(field, lang = 'th') {
   const r = PROFILE_FIELD_RULES[field];
   if (!r) return '';
-  return `${r.label} ${r.min}–${r.max} ${r.unit}`;
+  const isEn = lang === 'en';
+  const lbl = isEn ? r.labelEn : r.label;
+  const unit = isEn ? r.unitEn : r.unit;
+  return `${lbl} ${r.min}–${r.max} ${unit}`;
 }
 
 /**
  * Validate one raw (string|number) profile input.
  * @returns {{valid:boolean, value:(number|null), error:(string|null)}}
  */
-export function validateProfileField(field, raw) {
+export function validateProfileField(field, raw, lang = 'th') {
+  const isEn = lang === 'en';
   const r = PROFILE_FIELD_RULES[field];
-  if (!r) return { valid: false, value: null, error: 'ไม่รู้จักช่องข้อมูลนี้' };
-  const hint = getProfileFieldHint(field);
+  if (!r) {
+    return { valid: false, value: null, error: isEn ? 'Unknown profile field' : 'ไม่รู้จักช่องข้อมูลนี้' };
+  }
+  const hint = getProfileFieldHint(field, lang);
+  const lbl = isEn ? r.labelEn : r.label;
+  const unit = isEn ? r.unitEn : r.unit;
   const text = raw === null || raw === undefined ? '' : String(raw).trim();
   if (text === '') {
-    return { valid: false, value: null, error: `กรุณากรอก${r.label} (ช่วงที่ยอมรับ ${r.min}–${r.max} ${r.unit})` };
+    return {
+      valid: false,
+      value: null,
+      error: isEn
+        ? `Please enter ${lbl} (accepted range ${r.min}–${r.max} ${unit})`
+        : `กรุณากรอก${lbl} (ช่วงที่ยอมรับ ${r.min}–${r.max} ${unit})`
+    };
   }
   const num = Number(text);
   if (!Number.isFinite(num)) {
-    return { valid: false, value: null, error: `ค่าไม่ถูกต้อง — ${hint}` };
+    return { valid: false, value: null, error: isEn ? `Invalid number — ${hint}` : `ค่าไม่ถูกต้อง — ${hint}` };
   }
   if (r.integer && !Number.isInteger(num)) {
-    return { valid: false, value: null, error: `ต้องเป็นจำนวนเต็ม — ${hint}` };
+    return { valid: false, value: null, error: isEn ? `Must be a whole number — ${hint}` : `ต้องเป็นจำนวนเต็ม — ${hint}` };
   }
   if (num < r.min || num > r.max) {
-    return { valid: false, value: null, error: `อยู่นอกช่วงที่กำหนด — ${hint}` };
+    return { valid: false, value: null, error: isEn ? `Out of range — ${hint}` : `อยู่นอกช่วงที่กำหนด — ${hint}` };
   }
   return { valid: true, value: num, error: null };
 }
 
 /** Validate a whole draft object of raw strings. Returns { errors, validValues }. */
-export function validateProfileDraft(draft) {
+export function validateProfileDraft(draft, lang = 'th') {
   const errors = {};
   const validValues = {};
   Object.keys(PROFILE_FIELD_RULES).forEach(field => {
-    const res = validateProfileField(field, draft?.[field]);
+    const res = validateProfileField(field, draft?.[field], lang);
     if (res.valid) validValues[field] = res.value;
     else errors[field] = res.error;
   });
@@ -106,22 +120,27 @@ export function getStepChip(type) {
   return STEP_CHIPS[type] || { label: String(type || 'STEP'), tone: 'zinc' };
 }
 
-/** DEF-14b: equipment used by a step, as Thai names (equipmentUsed preferred, else equipment). */
-export function getStepEquipmentLabels(step, catalog = []) {
+/** DEF-14b: equipment used by a step, as localized names (equipmentUsed preferred, else equipment). */
+export function getStepEquipmentLabels(step, catalog = [], lang = 'th') {
   const raw = step && (step.equipmentUsed ?? step.equipment);
   const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
   return list.map(item => {
     const id = typeof item === 'string' ? item : item?.id || item?.nameTh || '';
     const found = catalog.find(c => c.id === id);
+    if (lang === 'en') {
+      return found?.nameEn || (typeof item === 'object' ? item?.nameEn || item?.nameTh : '') || id;
+    }
     const name = found?.nameTh || (typeof item === 'object' ? item?.nameTh : '') || id;
     return String(name).split(' (')[0];
   });
 }
 
-/** DEF-08: Thai short muscle name (text before " (") from a MUSCLE_GROUPS-style list. */
-export function getMuscleShortName(muscleId, groups = []) {
+/** DEF-08: Localized short muscle name from a MUSCLE_GROUPS-style list. */
+export function getMuscleShortName(muscleId, groups = [], lang = 'th') {
   const m = groups.find(g => g.id === muscleId);
-  return m ? String(m.nameTh).split(' (')[0] : String(muscleId);
+  if (!m) return String(muscleId);
+  if (lang === 'en') return m.shortEn || m.nameEn;
+  return String(m.nameTh).split(' (')[0];
 }
 
 /**
@@ -134,9 +153,17 @@ export function computeBodyMetrics({ weightKg = 70, heightCm = 170, age = 30 } =
   const hM = hCm / 100;
   const bmi = Number((w / (hM * hM)).toFixed(1));
   let bmiCategoryTh = 'ปกติ (สมส่วน)';
-  if (bmi < 18.5) bmiCategoryTh = 'น้ำหนักน้อย';
-  else if (bmi >= 25.0) bmiCategoryTh = 'อ้วน';
-  else if (bmi >= 23.0) bmiCategoryTh = 'ท้วม / น้ำหนักเกิน';
+  let bmiCategoryEn = 'Normal';
+  if (bmi < 18.5) {
+    bmiCategoryTh = 'น้ำหนักน้อย';
+    bmiCategoryEn = 'Underweight';
+  } else if (bmi >= 25.0) {
+    bmiCategoryTh = 'อ้วน';
+    bmiCategoryEn = 'Obese';
+  } else if (bmi >= 23.0) {
+    bmiCategoryTh = 'ท้วม / น้ำหนักเกิน';
+    bmiCategoryEn = 'Overweight';
+  }
   const maxHrBpm = Math.round(208 - 0.7 * a);
-  return { bmi, bmiCategoryTh, maxHrBpm };
+  return { bmi, bmiCategoryTh, bmiCategoryEn, maxHrBpm };
 }

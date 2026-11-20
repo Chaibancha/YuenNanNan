@@ -35,10 +35,10 @@
   - `🦴 X-Ray Skeletal`: Translucent fascia/muscle revealing spine, ribcage & joints
   - `🔥 EMG & Recovery Heatmap`: Live muscle fatigue & recovery status map
 
-### 2. Real-Time Looping Workout Video Engine (`src/ExerciseVideoEngine.js`)
-- Generates smooth looping `<video autoplay loop muted playsinline>` streams via `canvas.captureStream()` for **every exercise and all 11 equipment types**:
+### 2. Interactive 360° 3D Exercise Form Coach (`src/Exercise3DCoach.jsx` & `src/exercise3DKinematics.js`)
+- Rotatable 360° 3D anatomical form coach with live EMG activation, spine alignment indicator, and rep phase HUD across **all 11 equipment types**:
   - Bodyweight, Dumbbells, Kettlebell, Resistance Band, Pull-up Bar, Barbell, Jump Rope, Adjustable Bench, Indoor Bike, Yoga Mat, Yoga Block.
-- Interactive video controls: **0.5x Slow-Mo / 1.0x / 1.5x** playback speeds and **Side / Front** camera angles, plus **5-second pre-warming** before step transitions.
+- Interactive playback controls: **0.5x Slow-Mo / 1.0x / 1.5x** speeds and camera angle presets.
 
 ### 3. Science-Based Modalities & Inspired Top-App Features (`src/WorkoutEngine.js`)
 - **Training Modalities:**
@@ -57,23 +57,24 @@
 
 ```text
 YuenNanNan/
-├── Index.html                  # Unified Vite HTML Entry Point (<div id="root">)
+├── index.html                  # Unified Vite HTML Entry Point (<div id="root">)
 ├── manifest.json               # Web App Manifest (Play Store TWA ready)
-├── sw.js                       # Offline-First Service Worker (v3, Stale-While-Revalidate + Media Cache)
+├── sw.js                       # Offline-First Service Worker (v5, Stale-While-Revalidate + Media Cache)
 ├── vite.config.js              # Vite React Build + PWA Copy Plugin
 ├── tailwind.config.js          # Bundled Tailwind CSS + Thai System Font Fallback
 ├── postcss.config.js           # PostCSS Pipeline
 ├── capacitor.config.json       # Capacitor Android Build Configuration
 ├── package.json                # React + Vite + Three.js Dependencies
-├── PRD.md / CR.md / BACKLOG.md # Engineering Specs & Sprint Roadmap
-├── Explode30_Original.html     # Original v0 prototype backup
 └── src/
     ├── main.jsx                # React Root Mount & Service Worker Registration
     ├── index.css               # Bundled Tailwind Directives & Dark Studio Theme
     ├── App.jsx                 # React Main Orchestrator, Goal Presets, Profile, Guard & Streak
     ├── Body3DAnatomy.js        # BioDigital HumanAPI Bridge, MSD Mapping & Ecorché Builder
     ├── Body3DSelector.jsx      # Dual-Engine BioDigital + Three.js Dissect/Isolate/Lock Selector
-    ├── ExerciseVideoEngine.js  # Looping Biomechanical Video Stream Engine + Safe Canvas Fallback
+    ├── Exercise3DCoach.jsx     # Interactive 360° 3D Exercise Form Coach with EMG & Spine Guide
+    ├── exercise3DKinematics.js # Procedural 3D Skeletal & Equipment Kinematics Engine
+    ├── profileValidation.js    # Athlete Profile Input Validation Helpers
+    ├── sessionSummary.js       # Post-Workout Telemetry & Summary Calculator
     ├── WorkoutEngine.js        # Physiology Engine, Joint Filter, Phase METs, Presets & Recovery
     └── WorkoutPlayer.jsx       # Focus Mode Player, BLE HR, Metronome, Breath Pacer & 9:16 Share Card
 ```
@@ -112,7 +113,7 @@ npx cap open android
 Build the signed **Android App Bundle (`.aab`)** inside Android Studio (`Build -> Generate Signed Bundle / APK`).
 
 ### Method B: Trusted Web Activity (TWA) via Bubblewrap
-1. Deploy `Index.html`, `manifest.json`, `sw.js`, and `src/` to HTTPS (e.g., GitHub Pages or Vercel).
+1. Deploy `index.html`, `manifest.json`, `sw.js`, and `src/` to HTTPS (e.g., GitHub Pages or Vercel).
 2. Run Bubblewrap CLI:
    ```bash
    npx @bubblewrap/cli init --manifest https://<your-domain>/manifest.json

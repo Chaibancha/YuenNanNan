@@ -1,8 +1,8 @@
 {
-  "name": "Kinetic Med-Fit 3D | Medical Anatomy & AI Workout Studio",
-  "short_name": "Med-Fit 3D",
+  "name": "ยืนนานนาน(YuenNanNan) | Medical Anatomy & 3D Workout Studio",
+  "short_name": "ยืนนานนาน",
   "description": "Interactive 3D medical muscle fiber selector with looping biomechanical workout videos, HIIT, REHIT, Cardio, Yoga & 7-Minute Scientific Circuit.",
-  "start_url": "./Index.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

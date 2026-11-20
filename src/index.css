@@ -10,6 +10,138 @@
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
   }
+
+  html.light,
+  html.light body {
+    background-color: #f1f5f9;
+    color: #0f172a;
+  }
+}
+
+/* Light Mode Medical Studio Theme Overrides */
+html.light .bg-zinc-950 {
+  background-color: #f8fafc !important;
+}
+html.light .bg-zinc-950\/95 {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}
+html.light .bg-zinc-950\/90 {
+  background-color: rgba(248, 250, 252, 0.94) !important;
+}
+html.light .bg-zinc-950\/85 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+html.light .bg-zinc-950\/80 {
+  background-color: rgba(248, 250, 252, 0.88) !important;
+}
+html.light .bg-zinc-950\/70 {
+  background-color: rgba(241, 245, 249, 0.85) !important;
+}
+html.light .bg-zinc-950\/60 {
+  background-color: rgba(241, 245, 249, 0.8) !important;
+}
+html.light .bg-zinc-950\/50 {
+  background-color: rgba(241, 245, 249, 0.7) !important;
+}
+html.light .bg-zinc-900 {
+  background-color: #ffffff !important;
+}
+html.light .bg-zinc-900\/95 {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+}
+html.light .bg-zinc-900\/90 {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+}
+html.light .bg-zinc-900\/70 {
+  background-color: rgba(241, 245, 249, 0.9) !important;
+}
+html.light .bg-zinc-800 {
+  background-color: #e2e8f0 !important;
+}
+html.light .bg-zinc-800\/95 {
+  background-color: rgba(226, 232, 240, 0.95) !important;
+}
+html.light .hover\:bg-zinc-800:hover {
+  background-color: #cbd5e1 !important;
+}
+html.light .hover\:bg-zinc-700:hover {
+  background-color: #cbd5e1 !important;
+}
+html.light .hover\:bg-orange-500:hover {
+  background-color: #f97316 !important;
+  color: #ffffff !important;
+}
+
+html.light .to-zinc-950 {
+  --tw-gradient-to: #ffffff var(--tw-gradient-to-position) !important;
+}
+html.light .from-zinc-950 {
+  --tw-gradient-from: #f8fafc var(--tw-gradient-from-position) !important;
+}
+html.light .via-zinc-950\/80 {
+  --tw-gradient-via: rgba(248, 250, 252, 0.85) var(--tw-gradient-via-position) !important;
+}
+html.light .bg-emerald-950\/30 {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+}
+
+html.light .border-zinc-800,
+html.light .border-zinc-800\/80,
+html.light .border-zinc-800\/60 {
+  border-color: #cbd5e1 !important;
+}
+html.light .border-zinc-700 {
+  border-color: #94a3b8 !important;
+}
+
+html.light .text-white:where(:not(.bg-orange-500):not(.bg-rose-500):not(.bg-red-600):not(.from-orange-500):not(.keep-white-text)) {
+  color: #0f172a !important;
+}
+html.light .text-zinc-100 {
+  color: #0f172a !important;
+}
+html.light .text-zinc-200 {
+  color: #1e293b !important;
+}
+html.light .text-zinc-300 {
+  color: #334155 !important;
+}
+html.light .text-zinc-400 {
+  color: #475569 !important;
+}
+html.light .text-zinc-500 {
+  color: #64748b !important;
+}
+html.light .hover\:text-white:hover:where(:not(.bg-orange-500):not(.hover\:bg-orange-500)) {
+  color: #0f172a !important;
+}
+
+/* Pastel accent texts converted to crisp high-contrast tones in Light Mode */
+html.light .text-orange-200,
+html.light .text-orange-300,
+html.light .text-orange-400 {
+  color: #c2410c !important;
+}
+html.light .text-amber-200,
+html.light .text-amber-300,
+html.light .text-amber-400 {
+  color: #b45309 !important;
+}
+html.light .text-cyan-200,
+html.light .text-cyan-300,
+html.light .text-cyan-400 {
+  color: #0e7490 !important;
+}
+html.light .text-emerald-300,
+html.light .text-emerald-400 {
+  color: #047857 !important;
+}
+html.light .text-rose-300,
+html.light .text-rose-400 {
+  color: #be123c !important;
+}
+html.light .text-purple-300 {
+  color: #7e22ce !important;
 }
 
 ::-webkit-scrollbar {
@@ -25,4 +157,14 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: #e2e8f0;
+}
+html.light ::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }

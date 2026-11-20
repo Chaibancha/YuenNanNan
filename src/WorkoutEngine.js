@@ -12,193 +12,225 @@ export const MUSCLE_GROUPS = [
     id: 'neck_scm',
     nameTh: 'คอและก้านคอ (Neck & SCM)',
     nameEn: 'Sternocleidomastoid & Splenius Capitis',
+    shortEn: 'Neck & SCM',
     viewSide: 'both',
     color: '#f59e0b',
     antagonist: 'rhomboids_erector',
     synergists: ['shoulders_posterior_traps'],
     fiberDirection: 'oblique-inferior-anterior',
     originInsertion: 'Manubrium & Clavicle → Mastoid Process',
-    description: 'กล้ามเนื้อคอและก้านคอ พยุงศีรษะ หมุนคอ และลดอาการตึงบ่าออฟฟิศซินโดรม'
+    description: 'กล้ามเนื้อคอและก้านคอ พยุงศีรษะ หมุนคอ และลดอาการตึงบ่าออฟฟิศซินโดรม',
+    descriptionEn: 'Cervical flexors & extensors that stabilize the head, rotate the neck, and relieve desk-neck tension.'
   },
   {
     id: 'shoulders_anterior_lateral',
     nameTh: 'หัวไหล่หน้าและข้าง (Front & Side Delts)',
     nameEn: 'Anterior & Lateral Deltoids',
+    shortEn: 'Front & Side Delts',
     viewSide: 'front',
     color: '#eab308',
     antagonist: 'lats_teres',
     synergists: ['chest_upper_Mid', 'triceps'],
     fiberDirection: 'multipennate-convergent',
     originInsertion: 'Lateral Clavicle & Acromion → Deltoid Tuberosity',
-    description: 'หัวไหล่ส่วนหน้าและด้านข้าง สร้างความกว้างของช่วงไหล่และแรงดันเหนือศีรษะ'
+    description: 'หัวไหล่ส่วนหน้าและด้านข้าง สร้างความกว้างของช่วงไหล่และแรงดันเหนือศีรษะ',
+    descriptionEn: 'Front and side deltoid heads driving shoulder abduction, overhead pressing power, and upper-frame width.'
   },
   {
     id: 'shoulders_posterior_traps',
     nameTh: 'ไหล่หลังและบ่า (Rear Delts & Traps)',
     nameEn: 'Posterior Deltoid & Upper/Mid Trapezius',
+    shortEn: 'Rear Delts & Traps',
     viewSide: 'back',
     color: '#fb923c',
     antagonist: 'chest_upper_Mid',
     synergists: ['rhomboids_erector', 'lats_teres'],
     fiberDirection: 'transverse-convergent',
     originInsertion: 'Occiput & Spinous Processes → Scapular Spine & Acromion',
-    description: 'บ่าและหัวไหล่ด้านหลัง ป้องกันไหล่ห่อค่อมและเพิ่มความสมดุลข้อไหล่'
+    description: 'บ่าและหัวไหล่ด้านหลัง ป้องกันไหล่ห่อค่อมและเพิ่มความสมดุลข้อไหล่',
+    descriptionEn: 'Posterior deltoids and trapezius stabilizing scapular retraction, posture alignment, and shoulder balance.'
   },
   {
     id: 'chest_upper_Mid',
     nameTh: 'อกบนและอกหลัก (Chest Pectorals)',
     nameEn: 'Pectoralis Major (Clavicular & Sternal Heads)',
+    shortEn: 'Chest Pectorals',
     viewSide: 'front',
     color: '#f97316',
     antagonist: 'rhomboids_erector',
     synergists: ['shoulders_anterior_lateral', 'triceps'],
     fiberDirection: 'fan-shaped-convergent',
     originInsertion: 'Clavicle & Sternum → Intertubercular Sulcus of Humerus',
-    description: 'กล้ามเนื้อหน้าอกส่วนบนและกลาง ทำหน้าที่ผลัก ดัน และหุบต้นแขนเข้าหากลางลำตัว'
+    description: 'กล้ามเนื้อหน้าอกส่วนบนและกลาง ทำหน้าที่ผลัก ดัน และหุบต้นแขนเข้าหากลางลำตัว',
+    descriptionEn: 'Clavicular and sternal pectorals powering horizontal pressing, pushing movements, and arm adduction.'
   },
   {
     id: 'serratus_obliques',
     nameTh: 'ฟันเลื่อยและท้องข้าง (Serratus & Obliques)',
     nameEn: 'Serratus Anterior & External/Internal Obliques',
+    shortEn: 'Serratus & Obliques',
     viewSide: 'front',
     color: '#22c55e',
     antagonist: 'rhomboids_erector',
     synergists: ['abs_rectus', 'chest_upper_Mid'],
     fiberDirection: 'diagonal-interdigitating',
     originInsertion: 'Ribs 1–12 → Medial Scapula & Iliac Crest',
-    description: 'กล้ามเนื้อข้างลำตัวรูปฟันเลื่อยและเอวด้านข้าง ควบคุมการบิดลำตัวและเสถียรภาพสะบัก'
+    description: 'กล้ามเนื้อข้างลำตัวรูปฟันเลื่อยและเอวด้านข้าง ควบคุมการบิดลำตัวและเสถียรภาพสะบัก',
+    descriptionEn: 'Lateral core and serratus muscles controlling trunk rotation, anti-rotation, and scapular protraction.'
   },
   {
     id: 'abs_rectus',
     nameTh: 'หน้าท้องซิกแพค บน-ล่าง (Rectus Abdominis)',
     nameEn: 'Rectus Abdominis & Linea Alba',
+    shortEn: 'Abs & Core',
     viewSide: 'front',
     color: '#10b981',
     antagonist: 'rhomboids_erector',
     synergists: ['serratus_obliques', 'hip_adductors'],
     fiberDirection: 'vertical-segmented',
     originInsertion: 'Pubic Crest → Costal Cartilages 5–7 & Xiphoid',
-    description: 'กล้ามเนื้อหน้าท้องส่วนหน้าตั้งแต่ใต้ซี่โครงถึงหน้าท้องล่าง สร้างแกนกลางลำตัวที่แข็งแกร่ง'
+    description: 'กล้ามเนื้อหน้าท้องส่วนหน้าตั้งแต่ใต้ซี่โครงถึงหน้าท้องล่าง สร้างแกนกลางลำตัวที่แข็งแกร่ง',
+    descriptionEn: 'Anterior abdominal wall stabilizing spinal flexion, bracing, and core force transfer.'
   },
   {
     id: 'lats_teres',
     nameTh: 'ปีกหลังส่วนกว้าง (Lats & Teres Major)',
     nameEn: 'Latissimus Dorsi & Teres Major',
+    shortEn: 'Lats & Teres',
     viewSide: 'back',
     color: '#3b82f6',
     antagonist: 'shoulders_anterior_lateral',
     synergists: ['biceps_brachialis', 'rhomboids_erector'],
     fiberDirection: 'broad-fan-diagonal',
     originInsertion: 'Thoracolumbar Fascia & Iliac Crest → Humerus Groove',
-    description: 'กล้ามเนื้อปีกหลังขนาดใหญ่ สร้างทรง V-Taper และส่งแรงดึงเข้าหาลำตัว'
+    description: 'กล้ามเนื้อปีกหลังขนาดใหญ่ สร้างทรง V-Taper และส่งแรงดึงเข้าหาลำตัว',
+    descriptionEn: 'Broad dorsal pulling muscles driving vertical and horizontal rowing strength and V-taper width.'
   },
   {
     id: 'rhomboids_erector',
     nameTh: 'สะบักและหลังล่าง (Rhomboids & Erector Spinae)',
     nameEn: 'Rhomboids Major/Minor & Erector Spinae',
+    shortEn: 'Rhomboids & Lower Back',
     viewSide: 'back',
     color: '#2563eb',
     antagonist: 'abs_rectus',
     synergists: ['lats_teres', 'glutes'],
     fiberDirection: 'oblique-and-longitudinal',
     originInsertion: 'Vertebral Column & Sacrum → Medial Scapula & Ribs',
-    description: 'กล้ามเนื้อร่องหลัง สะบัก และแนวกระดูกสันหลังส่วนล่าง พยุงบุคลิกภาพให้ตั้งตรง'
+    description: 'กล้ามเนื้อร่องหลัง สะบัก และแนวกระดูกสันหลังส่วนล่าง พยุงบุคลิกภาพให้ตั้งตรง',
+    descriptionEn: 'Mid-back scapular retractors and spinal extensors supporting upright posture and safe hinging.'
   },
   {
     id: 'biceps_brachialis',
     nameTh: 'หน้าแขนและบราคิอาลิส (Biceps & Brachialis)',
     nameEn: 'Biceps Brachii & Brachialis',
+    shortEn: 'Biceps & Brachialis',
     viewSide: 'front',
     color: '#ec4899',
     antagonist: 'triceps',
     synergists: ['forearms', 'lats_teres'],
     fiberDirection: 'fusiform-longitudinal',
     originInsertion: 'Scapula Glenoid & Coracoid → Radial Tuberosity',
-    description: 'กล้ามเนื้อต้นแขนด้านหน้าทั้งมัดนอก-ใน ทำหน้าที่งอข้อศอกและหมุนหงายข้อมือ'
+    description: 'กล้ามเนื้อต้นแขนด้านหน้าทั้งมัดนอก-ใน ทำหน้าที่งอข้อศอกและหมุนหงายข้อมือ',
+    descriptionEn: 'Anterior upper-arm flexors driving elbow flexion, supination, and pulling assistance.'
   },
   {
     id: 'triceps',
     nameTh: 'หลังแขน 3 หัว (Triceps Brachii)',
     nameEn: 'Triceps Brachii (Long, Lateral & Medial Heads)',
+    shortEn: 'Triceps',
     viewSide: 'back',
     color: '#a855f7',
     antagonist: 'biceps_brachialis',
     synergists: ['chest_upper_Mid', 'shoulders_anterior_lateral'],
     fiberDirection: 'horseshoe-pennate',
     originInsertion: 'Infraglenoid & Posterior Humerus → Olecranon of Ulna',
-    description: 'กล้ามเนื้อหลังแขนทั้ง 3 หัว คิดเป็น 2 ใน 3 ของขนาดต้นแขน ทำหน้าที่เหยียดข้อศอก'
+    description: 'กล้ามเนื้อหลังแขนทั้ง 3 หัว คิดเป็น 2 ใน 3 ของขนาดต้นแขน ทำหน้าที่เหยียดข้อศอก',
+    descriptionEn: 'Three-headed posterior arm extensor accounting for two-thirds of upper-arm volume and lockout power.'
   },
   {
     id: 'forearms',
     nameTh: 'แขนท่อนล่างและข้อมือ (Forearms & Grip)',
     nameEn: 'Brachioradialis, Wrist Flexors & Extensors',
+    shortEn: 'Forearms & Grip',
     viewSide: 'both',
     color: '#d946ef',
     antagonist: 'biceps_brachialis',
     synergists: ['biceps_brachialis', 'lats_teres'],
     fiberDirection: 'longitudinal-parallel',
     originInsertion: 'Distal Humerus Epicondyles → Metacarpals & Phalanges',
-    description: 'กล้ามเนื้อปลายแขนและแรงบีบมือ เพิ่มความมั่นคงเวลาจับดัมเบล บาร์เบล และโหนบาร์'
+    description: 'กล้ามเนื้อปลายแขนและแรงบีบมือ เพิ่มความมั่นคงเวลาจับดัมเบล บาร์เบล และโหนบาร์',
+    descriptionEn: 'Brachioradialis and forearm flexors/extensors building grip endurance and wrist stability.'
   },
   {
     id: 'glutes',
     nameTh: 'สะโพกและก้น (Glutes Max & Medius)',
     nameEn: 'Gluteus Maximus & Gluteus Medius',
+    shortEn: 'Glutes',
     viewSide: 'back',
     color: '#f43f5e',
     antagonist: 'hip_adductors',
     synergists: ['hamstrings', 'quads'],
     fiberDirection: 'thick-oblique-fascicles',
     originInsertion: 'Posterior Ilium & Sacrum → Gluteal Tuberosity & IT Band',
-    description: 'มัดกล้ามเนื้อที่ใหญ่ที่สุดของร่างกาย ต้นกำเนิดพลังการเหยียดสะโพก กระโดด และทรงตัว'
+    description: 'มัดกล้ามเนื้อที่ใหญ่ที่สุดของร่างกาย ต้นกำเนิดพลังการเหยียดสะโพก กระโดด และทรงตัว',
+    descriptionEn: 'Primary hip extensors and pelvic stabilizers driving hip thrusts, sprints, squats, and knee tracking.'
   },
   {
     id: 'hip_adductors',
     nameTh: 'ข้อพับสะโพกและต้นขาใน (Hip Flexors & Adductors)',
     nameEn: 'Iliopsoas, TFL, Gracilis & Adductor Magnus',
+    shortEn: 'Hip Flexors & Adductors',
     viewSide: 'front',
     color: '#fb7185',
     antagonist: 'glutes',
     synergists: ['abs_rectus', 'quads'],
     fiberDirection: 'oblique-medial-convergence',
     originInsertion: 'Lumbar Spine & Pubis → Lesser Trochanter & Linea Aspera',
-    description: 'กล้ามเนื้อข้อพับสะโพกและต้นขาด้านใน ช่วยยกเข่า เสถียรภาพเชิงกราน และความยืดหยุ่น'
+    description: 'กล้ามเนื้อข้อพับสะโพกและต้นขาด้านใน ช่วยยกเข่า เสถียรภาพเชิงกราน และความยืดหยุ่น',
+    descriptionEn: 'Hip flexors and medial thigh adductors powering knee drive, lateral stability, and hip mobility.'
   },
   {
     id: 'quads',
     nameTh: 'ต้นขาด้านหน้า 4 มัด (Quadriceps)',
     nameEn: 'Rectus Femoris & Vastus (Lateralis/Medialis/Intermedius)',
+    shortEn: 'Quadriceps',
     viewSide: 'front',
     color: '#06b6d4',
     antagonist: 'hamstrings',
     synergists: ['glutes', 'calves_tibialis'],
     fiberDirection: 'bipennate-vertical',
     originInsertion: 'AIIS & Femur Shaft → Patellar Tendon & Tibial Tuberosity',
-    description: 'กล้ามเนื้อต้นขาด้านหน้าทั้ง 4 มัด เหยียดเข่า รับแรงกระแทก และพยุงข้อเข่า'
+    description: 'กล้ามเนื้อต้นขาด้านหน้าทั้ง 4 มัด เหยียดเข่า รับแรงกระแทก และพยุงข้อเข่า',
+    descriptionEn: 'Four anterior thigh extensors powering knee extension, squatting, jumping, and joint deceleration.'
   },
   {
     id: 'hamstrings',
     nameTh: 'ต้นขาด้านหลัง (Hamstrings)',
     nameEn: 'Biceps Femoris, Semitendinosus & Semimembranosus',
+    shortEn: 'Hamstrings',
     viewSide: 'back',
     color: '#6366f1',
     antagonist: 'quads',
     synergists: ['glutes', 'calves_tibialis'],
     fiberDirection: 'fusiform-posterior',
     originInsertion: 'Ischial Tuberosity → Fibular Head & Proximal Tibia',
-    description: 'กล้ามเนื้อด้านหลังต้นขา ทำหน้าที่พับเข่า ชะลอการวิ่ง และส่งแรงเหยียดสะโพก'
+    description: 'กล้ามเนื้อด้านหลังต้นขา ทำหน้าที่พับเข่า ชะลอการวิ่ง และส่งแรงเหยียดสะโพก',
+    descriptionEn: 'Posterior thigh muscles assisting hip extension, knee flexion, and sprinting deceleration.'
   },
   {
     id: 'calves_tibialis',
     nameTh: 'น่องและหน้าแข้ง (Calves & Tibialis)',
     nameEn: 'Gastrocnemius, Soleus & Tibialis Anterior',
+    shortEn: 'Calves & Tibialis',
     viewSide: 'both',
     color: '#14b8a6',
     antagonist: 'quads',
     synergists: ['hamstrings', 'quads'],
     fiberDirection: 'bipennate-achilles-insertion',
     originInsertion: 'Femoral Condyles & Tibia → Calcaneal (Achilles) Tendon',
-    description: 'กล้ามเนื้อน่องและหน้าแข้ง ส่งแรงสปริงข้อเท้า กระโดดเชือก และป้องกันข้อเท้าพลิก'
+    description: 'กล้ามเนื้อน่องและหน้าแข้ง ส่งแรงสปริงข้อเท้า กระโดดเชือก และป้องกันข้อเท้าพลิก',
+    descriptionEn: 'Lower-leg plantar/dorsiflexors providing ankle spring, jump elasticity, and balance control.'
   }
 ];
 
@@ -225,11 +257,12 @@ export const TRAINING_MODALITIES = {
     hrTargetBpm: [152, 178],
     energySystem: 'Anaerobic Glycolytic + VO2max',
     protocolsByLevel: {
-      beginner: { workSec: 35, restSec: 25, ratioLabel: '35s ฝึก : 25s พัก' },
-      intermediate: { workSec: 40, restSec: 20, ratioLabel: '40s ฝึก : 20s พัก' },
-      advanced: { workSec: 45, restSec: 15, ratioLabel: '45s ฝึก : 15s พัก' }
+      beginner: { workSec: 35, restSec: 25, ratioLabel: '35s ฝึก : 25s พัก', ratioLabelEn: '35s Work : 25s Rest' },
+      intermediate: { workSec: 40, restSec: 20, ratioLabel: '40s ฝึก : 20s พัก', ratioLabelEn: '40s Work : 20s Rest' },
+      advanced: { workSec: 45, restSec: 15, ratioLabel: '45s ฝึก : 15s พัก', ratioLabelEn: '45s Work : 15s Rest' }
     },
-    description: 'เร่งอัตราการเต้นของหัวใจสู่โซน 4-5 สลับพักสั้น กระตุ้น EPOC (Afterburn Effect) เผาผลาญต่อเนื่องหลังฝึก'
+    description: 'เร่งอัตราการเต้นของหัวใจสู่โซน 4-5 สลับพักสั้น กระตุ้น EPOC (Afterburn Effect) เผาผลาญต่อเนื่องหลังฝึก',
+    descriptionEn: 'Drives heart rate into Zones 4–5 with short recovery intervals to maximize EPOC afterburn and conditioning.'
   },
   REHIT: {
     id: 'REHIT',
@@ -239,11 +272,12 @@ export const TRAINING_MODALITIES = {
     hrTargetBpm: [118, 185],
     energySystem: 'Phosphagen (ATP-PCr) & Rapid Glycogen Depletion',
     protocolsByLevel: {
-      beginner: { sprintSec: 15, recoverySec: 135, ratioLabel: '15s Sprint : 135s ฟื้นตัว' },
-      intermediate: { sprintSec: 20, recoverySec: 130, ratioLabel: '20s Sprint : 130s ฟื้นตัว' },
-      advanced: { sprintSec: 20, recoverySec: 100, ratioLabel: '20s Sprint : 100s ฟื้นตัว' }
+      beginner: { sprintSec: 15, recoverySec: 135, ratioLabel: '15s Sprint : 135s ฟื้นตัว', ratioLabelEn: '15s Sprint : 135s Recovery' },
+      intermediate: { sprintSec: 20, recoverySec: 130, ratioLabel: '20s Sprint : 130s ฟื้นตัว', ratioLabelEn: '20s Sprint : 130s Recovery' },
+      advanced: { sprintSec: 20, recoverySec: 100, ratioLabel: '20s Sprint : 100s ฟื้นตัว', ratioLabelEn: '20s Sprint : 100s Recovery' }
     },
-    description: 'โปรโตคอลวิทยาศาสตร์การกีฬา (Vollaard Protocol) สปรินต์ขีดสุด 15-20 วินาที สลับเคลื่อนไหวเบา 2 นาที กระตุ้น AMPK/PGC-1α สูงสุด'
+    description: 'โปรโตคอลวิทยาศาสตร์การกีฬา (Vollaard Protocol) สปรินต์ขีดสุด 15-20 วินาที สลับเคลื่อนไหวเบา 2 นาที กระตุ้น AMPK/PGC-1α สูงสุด',
+    descriptionEn: 'Vollaard sports-science protocol pairing 15–20s all-out sprints with 2-minute active recovery to trigger AMPK/PGC-1α.'
   },
   CARDIO: {
     id: 'CARDIO',
@@ -253,11 +287,12 @@ export const TRAINING_MODALITIES = {
     hrTargetBpm: [122, 148],
     energySystem: 'Aerobic Oxidative Phosphorylation',
     protocolsByLevel: {
-      beginner: { workSec: 45, restSec: 15, ratioLabel: '45s ต่อเนื่อง : 15s เปลี่ยนท่า' },
-      intermediate: { workSec: 50, restSec: 10, ratioLabel: '50s ต่อเนื่อง : 10s เปลี่ยนท่า' },
-      advanced: { workSec: 55, restSec: 5, ratioLabel: '55s ต่อเนื่อง : 5s เปลี่ยนท่า' }
+      beginner: { workSec: 45, restSec: 15, ratioLabel: '45s ต่อเนื่อง : 15s เปลี่ยนท่า', ratioLabelEn: '45s Steady : 15s Transition' },
+      intermediate: { workSec: 50, restSec: 10, ratioLabel: '50s ต่อเนื่อง : 10s เปลี่ยนท่า', ratioLabelEn: '50s Steady : 10s Transition' },
+      advanced: { workSec: 55, restSec: 5, ratioLabel: '55s ต่อเนื่อง : 5s เปลี่ยนท่า', ratioLabelEn: '55s Steady : 5s Transition' }
     },
-    description: 'ฝึกความทนทานของระบบหัวใจและหลอดเลือดด้วยจังหวะคงที่ สลับส่วนบน-ล่าง (PHA) เน้นดึงไขมันมาใช้เป็นพลังงานหลัก'
+    description: 'ฝึกความทนทานของระบบหัวใจและหลอดเลือดด้วยจังหวะคงที่ สลับส่วนบน-ล่าง (PHA) เน้นดึงไขมันมาใช้เป็นพลังงานหลัก',
+    descriptionEn: 'Steady aerobic endurance alternating upper and lower body stations (PHA) to sustain fat oxidation in Zones 2–3.'
   },
   YOGA: {
     id: 'YOGA',
@@ -267,11 +302,12 @@ export const TRAINING_MODALITIES = {
     hrTargetBpm: [92, 124],
     energySystem: 'Aerobic Recovery, Fascia Release & Vagal Tone',
     protocolsByLevel: {
-      beginner: { workSec: 45, restSec: 15, breathRatio: '4s เข้า : 2s ค้าง : 4s ออก', ratioLabel: 'Yin/Hatha 45s : 15s' },
-      intermediate: { workSec: 50, restSec: 10, breathRatio: '4s เข้า : 2s ค้าง : 6s ออก', ratioLabel: 'Vinyasa 50s : 10s' },
-      advanced: { workSec: 55, restSec: 5, breathRatio: '5s เข้า : 3s ค้าง : 7s ออก', ratioLabel: 'Power Yoga 55s : 5s' }
+      beginner: { workSec: 45, restSec: 15, breathRatio: '4s เข้า : 2s ค้าง : 4s ออก', ratioLabel: 'Yin/Hatha 45s : 15s', ratioLabelEn: 'Yin/Hatha 45s : 15s' },
+      intermediate: { workSec: 50, restSec: 10, breathRatio: '4s เข้า : 2s ค้าง : 6s ออก', ratioLabel: 'Vinyasa 50s : 10s', ratioLabelEn: 'Vinyasa 50s : 10s' },
+      advanced: { workSec: 55, restSec: 5, breathRatio: '5s เข้า : 3s ค้าง : 7s ออก', ratioLabel: 'Power Yoga 55s : 5s', ratioLabelEn: 'Power Yoga 55s : 5s' }
     },
-    description: 'ผสานท่าอาสนะโยคะคลายพังผืด เพิ่มความยืดหยุ่นข้อต่อและแกนกลางลำตัว พร้อมวงกลมนำจังหวะลมหายใจ (Pranayama Breath Pacer)'
+    description: 'ผสานท่าอาสนะโยคะคลายพังผืด เพิ่มความยืดหยุ่นข้อต่อและแกนกลางลำตัว พร้อมวงกลมนำจังหวะลมหายใจ (Pranayama Breath Pacer)',
+    descriptionEn: 'Combines myofascial release, joint mobility asanas, and a synced Pranayama breath pacer for recovery and core control.'
   },
   '7MIN': {
     id: '7MIN',
@@ -281,11 +317,12 @@ export const TRAINING_MODALITIES = {
     hrTargetBpm: [145, 174],
     energySystem: 'Combined Anaerobic & Aerobic Conditioning',
     protocolsByLevel: {
-      beginner: { workSec: 25, restSec: 10, ratioLabel: '25s ฝึก : 10s เปลี่ยนท่า' },
-      intermediate: { workSec: 30, restSec: 10, ratioLabel: '30s ฝึก : 10s เปลี่ยนท่า' },
-      advanced: { workSec: 32, restSec: 8, ratioLabel: '32s ฝึก : 8s เปลี่ยนท่า' }
+      beginner: { workSec: 25, restSec: 10, ratioLabel: '25s ฝึก : 10s เปลี่ยนท่า', ratioLabelEn: '25s Work : 10s Transition' },
+      intermediate: { workSec: 30, restSec: 10, ratioLabel: '30s ฝึก : 10s เปลี่ยนท่า', ratioLabelEn: '30s Work : 10s Transition' },
+      advanced: { workSec: 32, restSec: 8, ratioLabel: '32s ฝึก : 8s เปลี่ยนท่า', ratioLabelEn: '32s Work : 8s Transition' }
     },
-    description: 'ได้แรงบันดาลใจจากงานวิจัย 7-Minute Workout (ACSM) จัดลำดับท่าสลับบน-ล่าง-แกนกลางต่อเนื่องในเวลาเร่งด่วน'
+    description: 'ได้แรงบันดาลใจจากงานวิจัย 7-Minute Workout (ACSM) จัดลำดับท่าสลับบน-ล่าง-แกนกลางต่อเนื่องในเวลาเร่งด่วน',
+    descriptionEn: 'Inspired by ACSM 7-Minute Circuit research, alternating upper, lower, and core exercises for time-crunched days.'
   }
 };
 
@@ -887,10 +924,10 @@ const EXERCISE_JOINT_LOAD_OVERRIDES = {
 };
 
 export const JOINT_STRESS_OPTIONS = [
-  { id: 'knee', labelTh: 'ข้อเข่า (Knee)', icon: '🦵' },
-  { id: 'wrist', labelTh: 'ข้อมือ (Wrist)', icon: '✋' },
-  { id: 'lower_back', labelTh: 'หลังล่าง (Lower Back)', icon: '🧘' },
-  { id: 'shoulder', labelTh: 'หัวไหล่ (Shoulder)', icon: '💪' }
+  { id: 'knee', labelTh: 'ข้อเข่า (Knee)', labelEn: 'Knee', icon: '🦵' },
+  { id: 'wrist', labelTh: 'ข้อมือ (Wrist)', labelEn: 'Wrist', icon: '✋' },
+  { id: 'lower_back', labelTh: 'หลังล่าง (Lower Back)', labelEn: 'Lower Back', icon: '🧘' },
+  { id: 'shoulder', labelTh: 'หัวไหล่ (Shoulder)', labelEn: 'Shoulder', icon: '💪' }
 ];
 
 const VALID_JOINT_IDS = new Set(JOINT_STRESS_OPTIONS.map(j => j.id));
@@ -942,7 +979,9 @@ export const GOAL_PRESETS = [
   {
     id: 'fat_burn_15',
     titleTh: '🔥 รีดไขมันเร่งด่วน (15 นาที)',
+    titleEn: '🔥 Rapid Fat Burn (15 min)',
     subtitleTh: 'เผาผลาญทั่วร่าง Zone 4-5 เหมาะกับวันที่เวลาน้อย',
+    subtitleEn: 'Full-body Zone 4–5 metabolic conditioning for busy days.',
     isFullBody: true,
     selectedMuscles: MUSCLE_GROUPS.map(m => m.id),
     modality: 'HIIT',
@@ -953,7 +992,9 @@ export const GOAL_PRESETS = [
   {
     id: 'office_syndrome_10',
     titleTh: '💻 แก้ปวดคอ-บ่า-ไหล่ ออฟฟิศซินโดรม (10 นาที)',
+    titleEn: '💻 Office Syndrome Neck & Shoulder Relief (10 min)',
     subtitleTh: 'คลายตึงกล้ามเนื้อคอ บ่า หลังบน พร้อมนำหายใจลดเครียด',
+    subtitleEn: 'Relieves cervical, trap, and upper-back tension with guided breathing.',
     isFullBody: false,
     selectedMuscles: ['neck_scm', 'shoulders_posterior_traps', 'rhomboids_erector'],
     modality: 'YOGA',
@@ -964,7 +1005,9 @@ export const GOAL_PRESETS = [
   {
     id: 'glutes_legs_safe_20',
     titleTh: '🍑 ปั้นก้น & ขาเรียว ถนอมข้อเข่า (20 นาที)',
+    titleEn: '🍑 Glutes & Legs Sculpt (Knee-Safe, 20 min)',
     subtitleTh: 'กระชับสะโพกและเรียวขาแบบไร้แรงกระแทก (Low-Impact)',
+    subtitleEn: 'Low-impact glute, hamstring, and quad toning with zero jumping.',
     isFullBody: false,
     selectedMuscles: ['glutes', 'hamstrings', 'quads', 'hip_adductors'],
     modality: 'CARDIO',
@@ -975,7 +1018,9 @@ export const GOAL_PRESETS = [
   {
     id: 'upper_body_strength_20',
     titleTh: '💪 เวทสร้างกล้ามท่อนบนที่บ้าน (20 นาที)',
+    titleEn: '💪 Home Upper-Body Strength (20 min)',
     subtitleTh: 'โฟกัสอก หลัง หัวไหล่ หน้าแขน หลังแขน กระชับชัด',
+    subtitleEn: 'Targets chest, lats, deltoids, biceps, and triceps.',
     isFullBody: false,
     selectedMuscles: ['chest_upper_Mid', 'lats_teres', 'shoulders_anterior_lateral', 'biceps_brachialis', 'triceps'],
     modality: 'HIIT',
@@ -989,7 +1034,9 @@ export const SEVEN_DAY_CHALLENGE = [
   {
     day: 1,
     titleTh: 'วันที่ 1: ปลุกกล้ามเนื้อทั่วร่างและแกนกลาง',
+    titleEn: 'Day 1: Full-Body & Core Activation',
     subtitleTh: '10 นาที • กระตุ้นระบบไหลเวียนเลือดแบบ 7-Min + แกนกลาง',
+    subtitleEn: '10 min • Low-impact metabolic & core ignition',
     isFullBody: false,
     selectedMuscles: ['chest_upper_Mid', 'abs_rectus', 'quads'],
     modality: 'HIIT',
@@ -999,7 +1046,9 @@ export const SEVEN_DAY_CHALLENGE = [
   {
     day: 2,
     titleTh: 'วันที่ 2: แก้ออฟฟิศซินโดรม คอ-บ่า-ไหล่-หลัง',
+    titleEn: 'Day 2: Neck, Traps & Upper-Back Relief',
     subtitleTh: '10 นาที • คลายพังผืดหลังส่วนบนและคอ + Pranayama',
+    subtitleEn: '10 min • Thoracic fascia release + Pranayama breathing',
     isFullBody: false,
     selectedMuscles: ['neck_scm', 'shoulders_posterior_traps', 'rhomboids_erector'],
     modality: 'YOGA',
@@ -1009,7 +1058,9 @@ export const SEVEN_DAY_CHALLENGE = [
   {
     day: 3,
     titleTh: 'วันที่ 3: ขาแกร่ง สะโพกกระชับ',
+    titleEn: 'Day 3: Strong Legs & Firm Glutes',
     subtitleTh: '15 นาที • ฝึกช่วงล่างสมดุลซ้าย-ขวา (Low-Impact)',
+    subtitleEn: '15 min • Balanced low-impact lower-body circuit',
     isFullBody: false,
     selectedMuscles: ['glutes', 'hamstrings', 'quads', 'calves_tibialis'],
     modality: 'CARDIO',
@@ -1019,7 +1070,9 @@ export const SEVEN_DAY_CHALLENGE = [
   {
     day: 4,
     titleTh: 'วันที่ 4: โฟกัสอก หลัง และแขนกระชับ',
+    titleEn: 'Day 4: Push-Pull Upper-Body Sculpt',
     subtitleTh: '15 นาที • PHA Upper Body สลับผลักและดึง',
+    subtitleEn: '15 min • PHA push-pull chest, lats, and arms',
     isFullBody: false,
     selectedMuscles: ['chest_upper_Mid', 'lats_teres', 'biceps_brachialis', 'triceps'],
     modality: 'HIIT',
@@ -1029,7 +1082,9 @@ export const SEVEN_DAY_CHALLENGE = [
   {
     day: 5,
     titleTh: 'วันที่ 5: ฟื้นฟูพังผืดและยืดเหยียดทั่วร่าง',
+    titleEn: 'Day 5: Whole-Body Mobility & Yoga Flow',
     subtitleTh: '15 นาที • Yoga Flow เติมออกซิเจนและปรับสมดุลข้อต่อ',
+    subtitleEn: '15 min • Oxygenating Yoga flow and joint balance',
     isFullBody: true,
     selectedMuscles: MUSCLE_GROUPS.map(m => m.id),
     modality: 'YOGA',
@@ -1039,7 +1094,9 @@ export const SEVEN_DAY_CHALLENGE = [
   {
     day: 6,
     titleTh: 'วันที่ 6: REHIT เร่งความฟิตหัวใจและ VO2max',
+    titleEn: 'Day 6: REHIT VO2max & Power Sprints',
     subtitleTh: '15 นาที • สปรินต์ระยะสั้นสลับฟื้นตัวแบบวิทยาศาสตร์',
+    subtitleEn: '15 min • Scientific short sprints with full recovery',
     isFullBody: false,
     selectedMuscles: ['quads', 'glutes', 'abs_rectus', 'serratus_obliques'],
     modality: 'REHIT',
@@ -1049,7 +1106,9 @@ export const SEVEN_DAY_CHALLENGE = [
   {
     day: 7,
     titleTh: 'วันที่ 7: จบภารกิจ Full-Body 20 นาที',
+    titleEn: 'Day 7: 20-Min Full-Body Finisher',
     subtitleTh: '20 นาที • รวมท่าครบทุกมัดกล้ามเนื้อหลัก',
+    subtitleEn: '20 min • Complete full-body endurance session',
     isFullBody: true,
     selectedMuscles: MUSCLE_GROUPS.map(m => m.id),
     modality: 'CARDIO',
@@ -1295,6 +1354,8 @@ export function resolveExerciseForEquipment(exercise, selectedEquipment = ['body
   let nameTh = exercise.nameTh;
   let nameEn = exercise.nameEn;
   let formCues = exercise.formCues;
+  let formCuesEn = exercise.formCuesEn || EXERCISE_FORM_CUES_EN[exercise.id] || exercise.nameEn;
+  let poseType = exercise.videoKinematics?.poseType || 'squat';
   let equipRender = exercise.videoKinematics?.equipRender || equipmentUsed[0] || 'bodyweight';
 
   if (!equipmentUsed.includes(equipRender)) {
@@ -1307,6 +1368,7 @@ export function resolveExerciseForEquipment(exercise, selectedEquipment = ['body
         nameTh = 'กางแขนบีบสะบักเปิดไหล่หลังและบ่า (Rear Delt Fly)';
         nameEn = 'Bodyweight Rear Delt Fly & Scapular Squeeze';
         formCues = 'โน้มตัวเล็กน้อยหรือยืนตรง กางแขนเปิดหัวไหล่ออกด้านนอก บีบสะบักค้าง 1 วินาทีแล้วคลายช้าๆ';
+        formCuesEn = 'Hinge slightly or stand tall, sweep arms wide into a rear-delt fly, and squeeze shoulder blades for 1s.';
         equipRender = 'bodyweight';
       } else {
         equipRender = 'band';
@@ -1318,26 +1380,32 @@ export function resolveExerciseForEquipment(exercise, selectedEquipment = ['body
         nameTh = 'บาร์เบลเบนช์เพรสบนม้านั่งสร้างกล้ามเนื้ออก';
         nameEn = 'Barbell Chest Bench Press';
         formCues = 'บีบสะบักติดม้านั่ง กดไหล่ลง ดันบาร์เบลขึ้นเหนืออกกลางโดยทำมุมข้อศอก 45 องศา';
+        formCuesEn = 'Pin shoulder blades onto the bench, keep elbows at 45 degrees, and press the barbell over mid-chest.';
         equipRender = 'bench_barbell';
       } else if (has('bench') && has('dumbbell')) {
         nameTh = 'ดัมเบลเบนช์เพรสบนม้านั่งสร้างกล้ามเนื้ออก';
         nameEn = 'Dumbbell Chest Bench Press';
         formCues = 'บีบสะบักติดม้านั่ง กดไหล่ลง ดันดัมเบลขึ้นเหนืออกกลางโดยทำมุมข้อศอก 45 องศา';
+        formCuesEn = 'Pin shoulder blades onto the bench, keep elbows at 45 degrees, and press dumbbells over mid-chest.';
         equipRender = 'dumbbell';
       } else if (has('dumbbell')) {
         nameTh = 'ดัมเบลฟลอร์เพรสดันอกบนพื้น (Floor Press)';
         nameEn = 'Dumbbell Floor Chest Press';
         formCues = 'นอนหงายบนพื้น บีบสะบัก กดไหล่ลง ดันดัมเบลขึ้นเหนืออกกลางโดยทำมุมข้อศอก 45 องศา';
+        formCuesEn = 'Lie flat on the floor/mat, retract shoulder blades, keep elbows at 45 degrees, and press dumbbells straight up.';
         equipRender = 'dumbbell';
       } else if (has('barbell')) {
         nameTh = 'บาร์เบลฟลอร์เพรสดันอกบนพื้น (Floor Press)';
         nameEn = 'Barbell Floor Chest Press';
         formCues = 'นอนหงายบนพื้น บีบสะบัก กดไหล่ลง ดันบาร์เบลขึ้นเหนืออกกลางอย่างควบคุม';
+        formCuesEn = 'Lie flat on the floor/mat, brace your core, and press the barbell smoothly over mid-chest.';
         equipRender = 'barbell';
       } else {
         nameTh = 'วิดพื้นยกระดับสร้างกล้ามเนื้ออก';
         nameEn = 'Incline Chest Push-Up';
         formCues = 'เกร็งลำตัวตรง บีบสะบัก ลดอกลงอย่างควบคุมแล้วออกแรงอกดันตัวขึ้น';
+        formCuesEn = 'Hold a straight plank alignment, lower chest with control, and push back up through your pecs.';
+        poseType = 'pushup';
         equipRender = has('bench') ? 'bench' : 'bodyweight';
       }
       break;
@@ -1403,11 +1471,13 @@ export function resolveExerciseForEquipment(exercise, selectedEquipment = ['body
         nameTh = 'ดิปส์หลังแขน 3 หัวกับม้านั่ง';
         nameEn = 'Bench Tricep Dips';
         formCues = 'วางมือบนขอบม้านั่ง หุบศอกชิดลำตัว ลดสะโพกลงจนต้นแขนขนานพื้นแล้วดันขึ้นสุด';
+        formCuesEn = 'Place hands on the bench edge, tuck elbows tight, lower hips cleanly, and press back up.';
         equipRender = 'bench';
       } else {
         nameTh = 'ดิปส์หลังแขน 3 หัวบนพื้น (Floor Tricep Dips)';
         nameEn = 'Floor Tricep Dips';
         formCues = 'วางฝ่ามือบนพื้นด้านหลังสะโพก หุบศอกชิดลำตัว งอศอกลดสะโพกลงแล้วออกแรงหลังแขนดันขึ้นสุด';
+        formCuesEn = 'Place palms flat on the floor behind your hips, bend elbows straight back, and press up with triceps.';
         equipRender = has('yoga_block') ? 'yoga_block' : 'bodyweight';
       }
       break;
@@ -1486,6 +1556,15 @@ export function resolveExerciseForEquipment(exercise, selectedEquipment = ['body
       }
       break;
 
+    case 'ex_yoga_bridge_thrust':
+      equipRender = has('yoga_mat') ? 'yoga_mat' : 'bodyweight';
+      if (has('band') && !has('yoga_mat') && !has('bodyweight')) {
+        equipRender = 'band';
+      }
+      formCues = 'นอนหงายชันเข่า กดส้นเท้าและฝ่ามือบนพื้น/เสื่อ ดันสะโพกขึ้นจนแนวลำตัวตรง บีบก้นค้าง 1-2 วินาทีแล้วผ่อนลงช้าๆ';
+      formCuesEn = 'Lie supine with knees bent, press heels and palms into the mat to lift hips into a straight bridge, squeeze glutes 1–2s, and lower slowly.';
+      break;
+
     default:
       break;
   }
@@ -1495,9 +1574,11 @@ export function resolveExerciseForEquipment(exercise, selectedEquipment = ['body
     nameTh,
     nameEn,
     formCues,
+    formCuesEn,
     equipmentUsed,
     videoKinematics: {
-      ...(exercise.videoKinematics || { poseType: 'squat', tempoSec: 1.5, rangeDeg: 80 }),
+      ...(exercise.videoKinematics || { tempoSec: 1.5, rangeDeg: 80 }),
+      poseType,
       equipRender
     }
   };
@@ -1724,12 +1805,18 @@ export function generateTimeBoundedSchedule({
         : modality === '7MIN'
         ? `7-MIN STATION ${i + 1}/${totalIntervals}`
         : `รอบที่ ${roundNum}/${totalRounds} • ท่า ${(i % exercisesPerRound) + 1}`;
+      const roundLabelEn = modality === 'YOGA'
+        ? `ASANA FLOW ${i + 1}/${totalIntervals}`
+        : modality === '7MIN'
+        ? `7-MIN STATION ${i + 1}/${totalIntervals}`
+        : `Round ${roundNum}/${totalRounds} • Ex ${(i % exercisesPerRound) + 1}`;
 
       steps.push(
         createStepObject(stepCounter++, 'WORK', ex, workSec, roundLabel, {
           fitnessLevel,
           modality,
-          selectedEquipment: activeEquip
+          selectedEquipment: activeEquip,
+          roundLabelEn
         })
       );
 
@@ -1854,6 +1941,7 @@ function createStepObject(stepNumber, phaseType, exercise, durationSec, roundLab
     nameEn: resolved.nameEn,
     primaryMuscle: resolved.primaryMuscle,
     primaryMuscleTh: muscleMeta.nameTh,
+    primaryMuscleEn: muscleMeta.shortEn || muscleMeta.nameEn,
     primaryMuscleColor: muscleMeta.color,
     secondaryMuscles: resolved.secondaryMuscles || [],
     equipment: resolved.equipment || ['bodyweight'],
@@ -1864,7 +1952,9 @@ function createStepObject(stepNumber, phaseType, exercise, durationSec, roundLab
     videoKinematics: resolved.videoKinematics || { poseType: 'squat', tempoSec: 1.5, equipRender: 'bodyweight', rangeDeg: 80 },
     duration: durationSec,
     roundLabel,
+    roundLabelEn: options?.roundLabelEn || roundLabel,
     formCues: resolved.formCues,
+    formCuesEn: resolved.formCuesEn || EXERCISE_FORM_CUES_EN[resolved.id] || resolved.nameEn,
     mediaUrl: resolved.mediaUrl,
     aiPrompt: promptData
   };
@@ -1987,7 +2077,8 @@ export function swapExerciseInSchedule(schedule, stepIndex) {
     {
       fitnessLevel: schedule.fitnessLevel,
       modality: schedule.modality,
-      selectedEquipment: activeEquip
+      selectedEquipment: activeEquip,
+      roundLabelEn: targetStep.roundLabelEn || targetStep.roundLabel
     }
   );
 
@@ -2012,6 +2103,7 @@ export function swapExerciseInSchedule(schedule, stepIndex) {
             : `สูดหายใจเข้าลึกทางจมูก เตรียมพร้อมสำหรับท่า ${newStep.nameTh}`,
           primaryMuscle: newStep.primaryMuscle,
           primaryMuscleTh: newStep.primaryMuscleTh,
+          primaryMuscleEn: newStep.primaryMuscleEn,
           primaryMuscleColor: newStep.primaryMuscleColor,
           equipment: newStep.equipment,
           equipmentUsed: newStep.equipmentUsed,
@@ -2042,6 +2134,7 @@ const DEFAULT_WORKOUT_STATS = {
   workoutDates: [],
   completedChallengeDays: [],
   recentRpe: [],
+  recentCompletionKeys: [],
   muscleFatigue: {}
 };
 
@@ -2126,6 +2219,10 @@ export function logCompletedWorkoutSession(schedule, options = {}) {
   if (options.credited === false) {
     return current;
   }
+  const dedupeKey = options.completionId || schedule?.planId || null;
+  if (dedupeKey && !options.allowRepeat && (current.recentCompletionKeys || []).includes(dedupeKey)) {
+    return current;
+  }
   const nextFatigue = { ...(current.muscleFatigue || {}) };
   const nowTs = options.timestamp || Date.now();
   const dateStr = options.dateStr || getLocalDateStr(nowTs);
@@ -2186,6 +2283,10 @@ export function logCompletedWorkoutSession(schedule, options = {}) {
     ? [...new Set([...(current.completedChallengeDays || []), options.completedChallengeDay])]
     : current.completedChallengeDays || [];
 
+  const nextCompletionKeys = dedupeKey
+    ? [...new Set([...(current.recentCompletionKeys || []), dedupeKey])].slice(-20)
+    : current.recentCompletionKeys || [];
+
   const updated = {
     totalSessions: (current.totalSessions || 0) + 1,
     totalMinutes: (current.totalMinutes || 0) + creditedMinutes,
@@ -2197,6 +2298,7 @@ export function logCompletedWorkoutSession(schedule, options = {}) {
     weeklyCompletedDays: streak.weeklyCompletedDays,
     completedChallengeDays: nextChallengeDays,
     recentRpe: nextRpe.slice(-14),
+    recentCompletionKeys: nextCompletionKeys,
     muscleFatigue: nextFatigue
   };
 
@@ -2204,13 +2306,18 @@ export function logCompletedWorkoutSession(schedule, options = {}) {
   return updated;
 }
 
-export function recordSessionRpe(rpe, modality = 'HIIT', durationMin = 20) {
+export function recordSessionRpe(rpe, modality = 'HIIT', durationMin = 20, sessionKey = null) {
   const current = loadWorkoutStats();
   const dateStr = getLocalDateStr(Date.now());
-  const nextRpe = [
-    ...(current.recentRpe || []),
-    { date: dateStr, modality, durationMin, rpe }
-  ].slice(-14);
+  const existing = current.recentRpe || [];
+  let nextRpe;
+  if (sessionKey && existing.some(item => item.sessionKey === sessionKey)) {
+    nextRpe = existing.map(item =>
+      item.sessionKey === sessionKey ? { ...item, date: dateStr, modality, durationMin, rpe } : item
+    );
+  } else {
+    nextRpe = [...existing, { sessionKey, date: dateStr, modality, durationMin, rpe }].slice(-14);
+  }
   const updated = { ...current, recentRpe: nextRpe };
   persistWorkoutStats(updated);
   return updated;
@@ -2272,4 +2379,72 @@ export class MediaPreloader {
       }
     }
   }
+}
+
+export const EXERCISE_FORM_CUES_EN = {
+  ex_neck_isometric_mobility: 'Keep your spine tall, drop shoulders away from ears, and gently resist lateral tilt with palm pressure.',
+  ex_band_neck_retraction: 'Anchor the band behind your skull and glide your chin straight back against light resistance.',
+  ex_db_push_press: 'Perform a shallow knee dip, then drive explosively through hips and legs to press overhead.',
+  ex_pike_shoulder_pushup: 'Lift hips into an inverted V, bend elbows forward to lower head in front of hands, and press back.',
+  ex_kb_high_pull_traps: 'Snap the hips forward and pull elbows high above wrists while squeezing rear delts and traps.',
+  ex_band_face_pull: 'Pull toward your forehead while externally rotating shoulders and squeezing shoulder blades for 1s.',
+  ex_pushup_explosive: 'Brace your core in a straight plank, lower chest close to the floor, and push explosively.',
+  ex_db_bench_press: 'Pin shoulder blades onto the bench/floor, keep elbows at 45 degrees, and press over mid-chest.',
+  ex_side_plank_rotation: 'Lift hips high, push the floor away through your shoulder blade, and rotate smoothly.',
+  ex_russian_twist_power: 'Lean back 45 degrees with core braced and rotate your ribcage side-to-side under oblique control.',
+  ex_mountain_climber_sprint: 'Hold a rigid high plank and drive knees alternately toward chest rapidly without pike hips.',
+  ex_yoga_navasana_boat: 'Balance on sit bones, lift shins to 45 degrees, lift your chest tall, and breathe steadily.',
+  ex_pullup_strict: 'Grip slightly wider than shoulders, depress scapulae first, and pull chest toward the bar.',
+  ex_db_renegade_row: 'Lock your spine neutral and sweep elbows past your ribs toward hips while squeezing lats.',
+  ex_yoga_cobra_locust: 'Lie prone, retract shoulder blades, and lift the chest with back extensors without pinching lower back.',
+  ex_db_hammer_curl_tempo: 'Pin elbows by your sides, curl smoothly to shoulder height without swinging, and control the descent.',
+  ex_chinup_underhand: 'Use a shoulder-width supinated grip and pull chin over the bar focusing on bicep contraction.',
+  ex_bench_tricep_dips: 'Keep elbows tucked close, lower hips until upper arms are parallel, and lock out with triceps.',
+  ex_farmer_grip_wrist_curl: 'Grip firmly, flex and extend wrists smoothly while keeping shoulders depressed and stable.',
+  ex_kb_russian_swing: 'Hinge hips back cleanly and snap glutes forward powerfully to float the weight to chest height.',
+  ex_yoga_bridge_thrust: 'Lie supine with knees bent, drive through heels and palms on the mat to lift hips into a straight bridge, squeeze glutes 1–2s, then lower slowly.',
+  ex_yoga_pigeon_warrior_lunge: 'Step into a deep lunge to open hip flexors, reach arms overhead, and breathe deep.',
+  ex_sumo_squat_adductor: 'Stand wide with toes out 45 degrees, sink straight down, and squeeze inner thighs to rise.',
+  ex_db_thruster_explode: 'Hold weight at shoulders, squat deep, and drive through heels into one fluid overhead press.',
+  ex_indoor_bike_wingate: 'Set moderate-high resistance and sprint at 100% all-out cadence for the full interval.',
+  ex_yoga_utkatasana_chair: 'Shift weight into heels, sink into an isometric chair squat, and lengthen spine upward.',
+  ex_jump_squat_plyo: 'Squat to parallel, explode upward vertically, and land softly toe-to-heel.',
+  ex_rdl_hinge: 'Soften knees, hinge hips back with a flat spine until hamstrings stretch, then drive hips forward.',
+  ex_yoga_downward_dog_pedal: 'Press palms wide, lift tailbone into an inverted V, and pedal heels to stretch calves and hamstrings.',
+  ex_speed_jump_rope: 'Turn the rope from your wrists and bounce lightly 1–2 inches on the balls of your feet.',
+  ex_plyo_calf_raises: 'Press onto the balls of your feet to peak contraction, hold 1s, and lower heels with control.',
+  warmup_dynamic_thoracic: 'Circle shoulders broadly and twist your torso gently while breathing deeply to warm joints.',
+  warmup_hip_opener_pulse: 'Step into deep hip openers and slow squats to mobilize hips, knees, and ankles.',
+  warmup_safe_cervical_thoracic: 'Sit or stand tall with relaxed shoulders and gently rotate neck and upper spine.',
+  warmup_safe_upper_mobility: 'Stand tall without knee flexion, circle shoulders smoothly, and rotate your torso.',
+  warmup_safe_glute_bridge: 'Lie supine with knees bent and drive through heels slowly to wake glutes without knee load.',
+  cooldown_parasympathetic_stretch: 'Hold gentle stretches with slow 4s-in / 6s-out breathing to restore heart rate.',
+  cooldown_safe_savasana_breath: 'Rest comfortably supine on the mat, relax shoulders and wrists, and breathe slowly.'
+};
+
+export function getMuscleDisplayName(muscleOrId, lang = 'th') {
+  const m = typeof muscleOrId === 'string'
+    ? MUSCLE_GROUPS.find(item => item.id === muscleOrId)
+    : muscleOrId;
+  if (!m) return String(muscleOrId || '');
+  if (lang === 'en') return m.shortEn || m.nameEn;
+  return m.nameTh.split(' (')[0];
+}
+
+export function getLocalizedStepText(step, lang = 'th') {
+  if (!step) return { title: '', subtitle: '', cues: '', muscleName: '', roundLabel: '' };
+  const isEn = lang === 'en';
+  const title = isEn ? (step.nameEn || step.nameTh) : (step.nameTh || step.nameEn);
+  const subtitle = isEn ? (step.nameTh || '') : (step.nameEn || '');
+  let cues = isEn
+    ? (step.formCuesEn || EXERCISE_FORM_CUES_EN[step.exerciseId] || EXERCISE_FORM_CUES_EN[step.id] || step.formCues)
+    : step.formCues;
+  if (isEn && step.type === 'REST') {
+    cues = 'Breathe slowly through your nose, shake out tension, and prepare your stance for the next exercise.';
+  }
+  const muscleName = isEn
+    ? (step.primaryMuscleEn || getMuscleDisplayName(step.primaryMuscle, 'en'))
+    : ((step.primaryMuscleTh || '').split(' (')[0] || getMuscleDisplayName(step.primaryMuscle, 'th'));
+  const roundLabel = isEn ? (step.roundLabelEn || step.roundLabel || '') : (step.roundLabel || '');
+  return { title, subtitle, cues, muscleName, roundLabel };
 }

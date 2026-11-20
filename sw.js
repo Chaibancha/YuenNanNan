@@ -1,19 +1,10 @@
-const CACHE_NAME = 'kinetic-medfit-3d-v4';
-const REAL_HUMAN_MEDIA = [
-  'ex_pushup_explosive',
-  'ex_neck_isometric_mobility',
-  'ex_db_push_press',
-  'ex_pike_shoulder_pushup',
-  'ex_kb_high_pull_traps',
-  'ex_russian_twist_power',
-  'ex_side_plank_rotation',
-  'ex_kb_russian_swing'
-].map(id => `./media/exercises/${id}.jpg`);
+const CACHE_NAME = 'yuennannan-3d-v5';
+const BUILD_ASSETS = [];
 const CORE_ASSETS = [
   './',
-  './Index.html',
+  './index.html',
   './manifest.json',
-  ...REAL_HUMAN_MEDIA
+  ...BUILD_ASSETS
 ];
 
 self.addEventListener('install', event => {
@@ -32,6 +23,16 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
+function offlineFallbackResponse(request, cached) {
+  if (cached) return cached;
+  if (request.mode === 'navigate') {
+    return caches.match('./index.html').then(
+      html => html || new Response('Offline', { status: 503, statusText: 'Offline' })
+    );
+  }
+  return new Response('', { status: 504, statusText: 'Offline' });
+}
+
 self.addEventListener('fetch', event => {
   const { request } = event;
   if (request.method !== 'GET') return;
@@ -44,11 +45,9 @@ self.addEventListener('fetch', event => {
 
   const isStaticMediaOrFont =
     url.hostname.includes('fonts.googleapis.com') ||
-    url.hostname.includes('fonts.gstatic.com') ||
-    url.hostname.includes('images.unsplash.com');
+    url.hostname.includes('fonts.gstatic.com');
 
   if (isStaticMediaOrFont) {
-    // Cache-First for fonts & static exercise thumbnails
     event.respondWith(
       caches.match(request).then(cached => {
         if (cached) return cached;
@@ -60,13 +59,13 @@ self.addEventListener('fetch', event => {
             }
             return res;
           })
-          .catch(() => cached);
+          .catch(() => offlineFallbackResponse(request, cached));
       })
     );
     return;
   }
 
-  // Same-origin bundled Vite assets & HTML navigation: Stale-While-Revalidate + Offline Navigation Fallback
+  // Same-origin bundled Vite assets & HTML navigation: Stale-While-Revalidate + Offline Fallback
   event.respondWith(
     caches.match(request).then(cached => {
       const networkFetch = fetch(request)
@@ -77,7 +76,7 @@ self.addEventListener('fetch', event => {
           }
           return res;
         })
-        .catch(() => cached || (request.mode === 'navigate' ? caches.match('./Index.html') : undefined));
+        .catch(() => offlineFallbackResponse(request, cached));
 
       return cached || networkFetch;
     })
