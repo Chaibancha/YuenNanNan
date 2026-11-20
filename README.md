@@ -1,6 +1,6 @@
-# KINETIC MED-FIT 3D (v2.1)
+# ยืนนานนาน (YuenNanNan) — 3D Medical Anatomy & Workout Studio (v2.2)
 
-> **Dual-Engine Interactive 3D Muscular System (BioDigital Human × MSD Manual + Ecorché Dissect/Isolate), Looping Biomechanical Workout Videos & Multi-Modality Exercise Physiology Studio (PWA / Android Play Store Ready)**
+> **Pure 360° Interactive 3D Exercise Form Coach, Dual-Engine 3D Muscular Anatomy (BioDigital Human × MSD Manual + Ecorché Dissect/Isolate with Neon EMG Glow), Dark/Light Theme & Bilingual (TH/EN) Exercise Physiology Studio (PWA / Android Play Store Ready)**
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-Chaibancha%2FYuenNanNan-orange?logo=github)](https://github.com/Chaibancha/YuenNanNan)
 [![Tech Stack](https://img.shields.io/badge/Stack-Three.js%20%7C%20React%20%7C%20Tailwind%20%7C%20WebGL-06b6d4)](#)
@@ -11,8 +11,8 @@
 ## Core Capabilities & Architecture
 
 ### 1. Dual-Engine Medical 3D Muscular System (`src/Body3DAnatomy.js` & `src/Body3DSelector.jsx`)
-- **Engine 1 — BioDigital Human × MSD Manual Live 3D Viewer (`be=2PcB` + `HumanAPI`):** Embeds the official interactive muscular system model referenced from [MSD Manual Consumer Version: Muscular System](https://www.msdmanuals.com/home/multimedia/3dmodel/muscular-system) via `BIODIGITAL_MSD_EMBED_URL` and `BIODIGITAL_HUMAN_API_SCRIPT` (`human-api.min.js` + `postMessage` bridge via `attachBioDigitalBridge()`). Clicking any anatomical structure resolves Latin/English names through `mapBioDigitalObjectToMuscleId()` to sync the 16 workout targets and live MSD Manual **Origin / Insertion** reference card.
-- **Engine 2 — BioDigital-Matched Three.js Anatomical Ecorché + Dissect & Isolate:** Offline-capable striated myofibril model (`buildMedicalAnatomyGroup()`) featuring **cranial & facial muscles** (`Frontalis`, `Temporalis`, `Masseter`, `Orbicularis Oris`) and **7 pearl-white tendon/fascia structures (`tendonMeshes`)** (`Galea Aponeurotica`, `Linea Alba`, `Thoracolumbar Fascia`, `Iliotibial Band`, `Patellar Tendon`, `Achilles Tendon`, `Wrist Retinaculum`), plus interactive **Select / Dissect / Isolate** tools (`dissectedMeshIds`, `isolatedMuscleId`).
+- **Engine 1 — BioDigital Human × MSD Manual Live 3D Viewer (`be=2PcB` + `HumanAPI`):** Embeds the official interactive muscular system model referenced from [MSD Manual Consumer Version: Muscular System](https://www.msdmanuals.com/home/multimedia/3dmodel/muscular-system) via `getBioDigitalEmbedUrl(theme)` and `BIODIGITAL_HUMAN_API_SCRIPT` (`human-api.min.js` + `postMessage` bridge via `attachBioDigitalBridge()`). Clicking any anatomical structure resolves Latin/English names through `mapBioDigitalObjectToMuscleId()` to sync the 16 workout targets and live MSD Manual **Origin / Insertion** reference card.
+- **Engine 2 — BioDigital-Matched Three.js Anatomical Ecorché + Dissect & Isolate:** Offline-capable striated myofibril model (`buildMedicalAnatomyGroup()`) featuring **cranial & facial muscles** (`Frontalis`, `Temporalis`, `Masseter`, `Orbicularis Oris`) and **7 pearl-white tendon/fascia structures (`tendonMeshes`)** (`Galea Aponeurotica`, `Linea Alba`, `Thoracolumbar Fascia`, `Iliotibial Band`, `Patellar Tendon`, `Achilles Tendon`, `Wrist Retinaculum`), plus interactive **Select / Dissect / Isolate** tools (`dissectedMeshIds`, `isolatedMuscleId`) and **Neon EMG Glow** highlighting active primary and secondary target muscles.
 - **16 Detailed Bilateral Muscle Groups:**
   1. `neck_scm` — Sternocleidomastoid & Splenius Capitis
   2. `shoulders_anterior_lateral` — Anterior & Lateral Deltoids
@@ -35,21 +35,23 @@
   - `🦴 X-Ray Skeletal`: Translucent fascia/muscle revealing spine, ribcage & joints
   - `🔥 EMG & Recovery Heatmap`: Live muscle fatigue & recovery status map
 
-### 2. Interactive 360° 3D Exercise Form Coach (`src/Exercise3DCoach.jsx` & `src/exercise3DKinematics.js`)
-- Rotatable 360° 3D anatomical form coach with live EMG activation, spine alignment indicator, and rep phase HUD across **all 11 equipment types**:
+### 2. Pure 360° Interactive 3D Exercise Form Coach (`src/Exercise3DCoach.jsx` & `src/exercise3DKinematics.js`)
+- Pure 3D anatomical form coach (`25` pose models with 2-bone analytic IK `solveLimbIK`), neon muscle glow on active primary/secondary targets, spine alignment guide, and equipment-honest prop rendering (e.g., Floor Press vs Bench Press, Floor Dips) across **all 11 equipment types**:
   - Bodyweight, Dumbbells, Kettlebell, Resistance Band, Pull-up Bar, Barbell, Jump Rope, Adjustable Bench, Indoor Bike, Yoga Mat, Yoga Block.
-- Interactive playback controls: **0.5x Slow-Mo / 1.0x / 1.5x** speeds and camera angle presets.
+- Interactive playback controls: smooth delta-time **0.5x Slow-Mo / 1.0x / 1.5x** speeds paired with tempo metronome cues, full Orbit/Zoom/Pan controls, and **3D Iso / Side / Front / Back / Top** camera presets.
 
-### 3. Science-Based Modalities & Inspired Top-App Features (`src/WorkoutEngine.js`)
+### 3. Science-Based Modalities, Focus Mode & Bilingual UI (`src/WorkoutEngine.js` & `src/WorkoutPlayer.jsx`)
 - **Training Modalities:**
   - **HIIT:** Zone 4–5 (`35:25`, `40:20`, `45:15`)
   - **REHIT (Vollaard Protocol):** Supramaximal `15–20s` All-Out Sprints + `100–135s` Active Recovery
   - **CARDIO (PHA Circuit):** Zone 2–3 steady-state upper/lower alternation (`45:15`, `50:10`, `55:5`)
   - **YOGA (Yoga Studio inspired):** Vinyasa, Power Yoga & Yin stretches with **Pranayama Breath Pacer** (`4s Inhale : 2s Hold : 6s Exhale`)
   - **7-Minute Scientific Circuit (7 Minute Workout inspired):** Instant ACSM-style circuit with SVG circular countdown ring & Haptic Vibration (`navigator.vibrate`)
+- **Responsive Stage & Focus Mode:** Distraction-free full-screen **Focus Mode** plus collapsible workout timeline (side panel on desktop, bottom list on mobile).
+- **Dark / Light Theme & TH / EN Bilingual Support:** Seamless dark/light studio themes, Thai/English localization across workouts, anatomy & profile validation, independent notification toggle (`LocalStorage`), and **Front + Back 16-muscle 9:16 PNG Share Cards**.
 - **Sworkit Features:** Exact time-bounded scheduling (`7, 10, 15, 20, 30, 45 min`), one-tap **Swap Exercise**, and **Low-Impact / Joint-Friendly** filter.
 - **JEFIT Features:** Per-exercise **EMG Muscle Activation %** bars and **LocalStorage Muscle Recovery %** tracking.
-- **Daily Burn Features:** Live simulated **Heart Rate (BPM)** & burn rate (`kcal/min`) telemetry bar.
+- **Daily Burn Features:** Live simulated **Heart Rate (BPM)** / Web Bluetooth HR monitor support & burn rate (`kcal/min`) telemetry bar.
 
 ---
 
